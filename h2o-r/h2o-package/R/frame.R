@@ -650,12 +650,12 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #' h2o.table(prostate.hex[,c(3,4)])
 #' }
 #' @export
+
 h2o.table <- function(x, y = NULL, dense = TRUE) {
   chk.H2OFrame(x)
-  if( !is.null(y) ) chk.H2OFrame(y)
-  if( is.null(y) ) .newExpr("table",x,dense) else .newExpr("table",x,y,dense)
+if( !is.null(y) ) chk.H2OFrame(y)
+if( is.null(y) ) .newExpr("table",x,dense) else .newExpr("table",x,y,dense)
 }
-
 #' @rdname h2o.table
 #' @export
 table.H2OFrame <- h2o.table
@@ -3872,3 +3872,15 @@ h2o.entropy <- function(x) .newExpr("entropy", x)
 #' @param path  Path to text file containing line-separated strings to be referenced. 
 #' @export
 h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x, .quote(path))
+
+#'
+#' Near Zero Variance
+#'
+#' Check if column is near zero variance
+#'
+#' @param x   The column on which to calculate the near zero variance
+#' @export
+h2o.nearZeroVar <- function(x) {
+  chk.H2OFrame(x)
+  .newExpr("nearZeroVar",x)
+}
