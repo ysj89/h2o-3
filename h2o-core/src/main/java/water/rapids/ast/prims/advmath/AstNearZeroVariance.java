@@ -7,9 +7,11 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.Env;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.util.IcedHashMap;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,34 +35,46 @@ public class AstNearZeroVariance extends AstPrimitive {
 
     @Override
     public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-        Frame fr1 = stk.track(asts[1].exec(env)).getFrame();
-        Vec vec1 = fr1.vec(0);
+        Frame fr = stk.track(asts[1].exec(env)).getFrame();
+        Vec vec1 = fr.vec(0);
 
-        int sz = fr1._names.length;
+        int sz = fr._names.length;
         String[] colnames = new String[sz];
         int i = 0;
-        for (String name : fr1._names) colnames[i++] = name;
+        for (String name : fr._names) colnames[i++] = name;
 
         ValFrame res = table_counts(vec1, colnames);
+
+        UniqTask t = new UniqTask().doAll(fr);
+        int nUniq = t._uniq.size();
+        final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
+        vec1 = Vec.makeZero(nUniq);
+        MRTask unique = new MRTask() {
+            @Override
+            public void map(Chunk c) {
+                int start = (int) c.start();
+                for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
+            }
+        }.doAll(vec1);
+
         return(res);
     }
-    
 
-    // -------------------------------------------------------------------------
-    // Count unique values of integers in a column
+
+    // Count unique values of integers in a column and return top two counts
     private ValFrame table_counts(Vec v1, String[] colnames) {
 
-        // This should be nearly the same cost as a 1-D array, since everything is
-        // sparsely filled in.
+        //This should be nearly the same cost as a 1-D array, since everything is
+        //sparsely filled in.
 
-        // If this is the 1-column case (all counts on the diagonals), just build a
-        // 1-d result.
+        //If this is the 1-column case (all counts on the diagonals), just build a
+        //1-d result.
 
 
-        // Slow-pass group counting, very sparse hashtables.
+        //Slow-pass group counting, very sparse hashtables.
         AstNearZeroVariance.SlowCnt sc = new AstNearZeroVariance.SlowCnt().doAll(v1, v1);
 
-        // Get the column headers as sorted doubles
+        //Get the column headers as sorted doubles
         double dcols[] = collectDomain(sc._col0s);
 
         Frame res = new Frame();
@@ -76,11 +90,16 @@ public class AstNearZeroVariance extends AstPrimitive {
         }
         Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
         res.add("Counts", vec);
+        int[] sortCol = new int[] {res.find("Counts")}; //Column to sort by. In this case it is "Counts".
+        res = res.sort(sortCol); //Return a sorted Frame. Not in place so must reassign.
+        //Only interested in highest counts and second highest counts
+        long[] rows = new long[] {res.numRows()-1, res.numRows()-2};
+        res = res.deepSlice(rows,null);
         return new ValFrame(res);
     }
 
-    // Collect the unique longs from this NBHML, convert to doubles and return
-    // them as a sorted double[].
+    //Collect the unique longs from this NBHML, convert to doubles and return
+    //them as a sorted double[].
     private static double[] collectDomain(NonBlockingHashMapLong ls) {
         int sz = ls.size();         // Uniques
         double ds[] = new double[sz];
@@ -96,8 +115,8 @@ public class AstNearZeroVariance extends AstPrimitive {
         return (NonBlockingHashMapLong.IteratorLong) nbhml.keySet().iterator();
     }
 
-    // Implementation is a double-dimension NBHML.  Each dimension key is the raw
-    // long bits of the double column.  Bottoms out in an AtomicLong.
+    //Implementation is a double-dimension NBHML.  Each dimension key is the raw
+    //long bits of the double column.  Bottoms out in an AtomicLong.
     private static class SlowCnt extends MRTask<AstNearZeroVariance.SlowCnt> {
         transient NonBlockingHashMapLong<NonBlockingHashMapLong<AtomicLong>> _col0s;
 
@@ -118,7 +137,7 @@ public class AstNearZeroVariance extends AstPrimitive {
                 if (Double.isNaN(d1)) continue;
                 long l1 = Double.doubleToRawLongBits(d1);
 
-                // Atomically fetch/create nested NBHM
+                //Atomically fetch/create nested NBHM
                 NonBlockingHashMapLong<AtomicLong> col1s = _col0s.get(l0);
                 if (col1s == null) {   // Speed filter pre-filled entries
                     col1s = new NonBlockingHashMapLong<>();
@@ -126,7 +145,7 @@ public class AstNearZeroVariance extends AstPrimitive {
                     if (old != null) col1s = old; // Lost race, use old value
                 }
 
-                // Atomically fetch/create nested AtomicLong
+                //Atomically fetch/create nested AtomicLong
                 AtomicLong cnt = col1s.get(l1);
                 if (cnt == null) {   // Speed filter pre-filled entries
                     cnt = new AtomicLong();
@@ -134,7 +153,7 @@ public class AstNearZeroVariance extends AstPrimitive {
                     if (old != null) cnt = old; // Lost race, use old value
                 }
 
-                // Atomically bump counter
+                //Atomically bump counter
                 cnt.incrementAndGet();
             }
         }
@@ -191,6 +210,35 @@ public class AstNearZeroVariance extends AstPrimitive {
                 sb.append("}\n");
             }
             return sb.toString();
+        }
+    }
+    private static class UniqTask extends MRTask<UniqTask> {
+        IcedHashMap<AstGroup.G, String> _uniq;
+
+        @Override
+        public void map(Chunk[] c) {
+            _uniq = new IcedHashMap<>();
+            AstGroup.G g = new AstGroup.G(1, null);
+            for (int i = 0; i < c[0]._len; ++i) {
+                g.fill(i, c, new int[]{0});
+                String s_old = _uniq.putIfAbsent(g, "");
+                if (s_old == null) g = new AstGroup.G(1, null);
+            }
+        }
+
+        @Override
+        public void reduce(UniqTask t) {
+            if (_uniq != t._uniq) {
+                IcedHashMap<AstGroup.G, String> l = _uniq;
+                IcedHashMap<AstGroup.G, String> r = t._uniq;
+                if (l.size() < r.size()) {
+                    l = r;
+                    r = _uniq;
+                }  // larger on the left
+                for (AstGroup.G rg : r.keySet()) l.putIfAbsent(rg, "");  // loop over smaller set
+                _uniq = l;
+                t._uniq = null;
+            }
         }
     }
 }
