@@ -3881,6 +3881,6 @@ h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x
 #' @param x   The column on which to calculate the near zero variance
 #' @export
 h2o.nearZeroVar <- function(x) {
-  chk.H2OFrame(x)
+  #chk.H2OFrame(x)
   .newExpr("nearZeroVar",x)
 }

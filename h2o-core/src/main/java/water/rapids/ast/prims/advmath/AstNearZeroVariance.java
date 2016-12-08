@@ -12,7 +12,6 @@ import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.util.IcedHashMap;
-
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -43,8 +42,11 @@ public class AstNearZeroVariance extends AstPrimitive {
         int i = 0;
         for (String name : fr._names) colnames[i++] = name;
 
+        //Get the most common value to the second most common value
         ValFrame res = table_counts(vec1, colnames);
+        double freqRatio = res.getFrame().vec("Counts").at(0)/res.getFrame().vec("Counts").at(1);
 
+        //Get unique counts
         UniqTask t = new UniqTask().doAll(fr);
         int nUniq = t._uniq.size();
         final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
@@ -56,6 +58,7 @@ public class AstNearZeroVariance extends AstPrimitive {
                 for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
             }
         }.doAll(vec1);
+        double uniqueRatio = unique._fr.numRows()/fr.numRows();
 
         return(res);
     }
