@@ -214,16 +214,47 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       buildTables(pca, dinfo.coefNames());
     }
 
-    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
+    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram, long nobs) {
+      // Save adapted frame info for scoring later
+      pca._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
+      if(dinfo._normMul == null) {
+        pca._output._normMul = new double[dinfo._nums];
+        Arrays.fill(pca._output._normMul, 1.0);
+      } else
+        pca._output._normMul = dinfo._normMul;
+      pca._output._permutation = dinfo._permutation;
+      pca._output._nnums = dinfo._nums;
+      pca._output._ncats = dinfo._cats;
+      pca._output._catOffsets = dinfo._catOffsets;
+
+      double dfcorr = nobs / (nobs - 1.0);
+      double[] sval = svd.getSingularValues();
+      pca._output._std_deviation = new double[_parms._k];    // Only want first k standard deviations
+      for(int i = 0; i < _parms._k; i++) {
+        sval[i] = dfcorr * sval[i];   // Degrees of freedom = n-1, where n = nobs = # row observations processed
+        pca._output._std_deviation[i] = Math.sqrt(sval[i]);
+      }
+
+      double[][] eigvec = svd.getV().getArray();
+      pca._output._eigenvectors_raw = new double[eigvec.length][_parms._k];   // Only want first k eigenvectors
+      for(int i = 0; i < eigvec.length; i++)
+        System.arraycopy(eigvec[i], 0, pca._output._eigenvectors_raw[i], 0, _parms._k);
+      pca._output._total_variance = dfcorr * gram.diagSum();  // Since gram = X'X/n, but variance requires n-1 in denominator
+      buildTables(pca, dinfo.coefNames());
+    }
+
+
+/*    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
                                          long nobs) {
       computeStatsFillModel(pca, dinfo, svd.getSingularValues(), svd.getV().getArray(), gram, nobs);
-    }
+    }*/
 
     // Main worker thread
     @Override
     public void computeImpl() {
       PCAModel model = null;
       DataInfo dinfo = null;
+      DataInfo AE = null;
 
       try {
         init(true);   // Initialize parameters
@@ -239,6 +270,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         Frame tranRebalanced = new Frame(_train);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
+          if (_wideDataset && (!_parms._impute_missing) && tranRebalanced.hasNAs()) {
+            DKV.put(tranRebalanced._key, tranRebalanced);
+            _train = Rapids.exec(String.format("(na.omit %s)", tranRebalanced._key)).getFrame(); // remove NA rows
+          }
+
           dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
 
@@ -248,18 +284,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           Gram gram = null;
           OuterGramTask ogtsk = null;
           GramTask gtsk = null;
-          long numNArows = 0l;
 
           if (_wideDataset) {
-            // count NA rows here and pass the info to OuterGramTask
-            if ((!_parms._impute_missing) && dinfo._adaptedFrame.hasNAs()) {
-              DKV.put(tranRebalanced._key, tranRebalanced);
-              numNArows = (long) Rapids.exec(String.format("(naRowCnt %s)", tranRebalanced._key)).getNums()[0];
-/*              if (tranRebalanced != null) { // remove the key here.  Don't need it anymore
-                tranRebalanced.remove();
-              }*/
-            }
-            ogtsk = new OuterGramTask(_job._key, dinfo, numNArows).doAll(dinfo._adaptedFrame);
+            ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
 
             gram = ogtsk._gram;
             model._output._nobs = ogtsk._nobs;
@@ -287,7 +314,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           _job.update(1, "Computing stats from SVD");
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
           if (_wideDataset) {
-            AMulTask stsk = new AMulTask(dinfo, svdJ.getV().getArray());
+            // new invoke the AMulTask to carry out the multiplication of A'U
+            AMulTask stsk = new AMulTask(dinfo, svdJ.getV().getArray(), _parms._use_all_factor_levels, _parms._k);
             computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), stsk.doAll(dinfo._adaptedFrame)._atq, gram,
                     model._output._nobs);
           } else {
@@ -383,6 +411,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
         if (dinfo != null) {
           dinfo.remove();
+        }
+        if (AE != null) {
+          AE.remove();
         }
       }
     }

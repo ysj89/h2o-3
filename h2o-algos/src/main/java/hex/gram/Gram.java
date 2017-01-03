@@ -768,14 +768,12 @@ public final class Gram extends Iced<Gram> {
     boolean _intercept = false;
     int[] _catOffsets;
     double _scale;    // 1/(number of samples)
-    long _rowsNoNas;  // number of rows without NAs in them;
 
 
-    public OuterGramTask(Key<Job> jobKey, DataInfo dinfo, long rowsNas){
+    public OuterGramTask(Key<Job> jobKey, DataInfo dinfo){
       super(null,dinfo,jobKey);
       _catOffsets = dinfo._catOffsets != null?Arrays.copyOf(dinfo._catOffsets, dinfo._catOffsets.length):null;
       _scale = dinfo._adaptedFrame.numRows() > 0?1.0/dinfo._adaptedFrame.numRows():0.0;
-      _rowsNoNas = dinfo._adaptedFrame.numRows()-rowsNas;
     }
 
     /*
@@ -787,23 +785,19 @@ public final class Gram extends Iced<Gram> {
       DataInfo.Row rowi = _dinfo.newDenseRow();
       DataInfo.Row rowj = _dinfo.newDenseRow();
       int rowOffset = (int) chks[0].start();   // calculate row indices for this particular chunks of data
-      int trueI = 0;    // true row count
 
-      for(int i = 0 ; i < chks[0]._len; ++i) {  // each loop through here will set one element of gram matrix
+      for(int i = 0 ; i < chks[0]._len; i++) {  // each loop through here will set one element of gram matrix
         _dinfo.extractDenseRow(chks, i, rowi);
         if (!rowi.isBad()) {
           ++_nobs;  // increment number of training samples used
-          int rowIOffset = trueI+rowOffset;
-          int trueJ = 0;    // true column count.  Skip over NAs.
+          int rowIOffset = i+rowOffset;
           for (int j = 0; j <= i; j++) {
             _dinfo.extractDenseRow(chks, j, rowj);
 
             if ((!rowi.isBad() && rowi.weight != 0) && (!rowj.isBad() && rowj.weight != 0)) {
-              processRow(rowi, rowj, rowIOffset, trueJ + rowOffset);
-              trueJ++;
+              processRow(rowi, rowj, rowIOffset, j + rowOffset);
             }
           }
-          trueI++;
         }
       }
       chunkDone();
@@ -814,7 +808,7 @@ public final class Gram extends Iced<Gram> {
     gram matrix for only this block.
      */
     @Override public void chunkInit(){
-      _gram = new Gram((int) _rowsNoNas, 0, _dinfo.numNums(), _dinfo._cats, _intercept);
+      _gram = new Gram((int)_dinfo._adaptedFrame.numRows(), 0, _dinfo.numNums(), _dinfo._cats, _intercept);
     }
 
     double _prev = 0;
