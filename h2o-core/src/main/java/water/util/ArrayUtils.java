@@ -278,6 +278,12 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) ds[i]/=n[i];
     return ds;
   }
+
+  public static double[][] mult(double[][] ds, double[] n) {
+    for (int i=0; i<ds.length; i++) mult(ds[i],n[i]);
+    return ds;
+  }
+
   public static float[] mult(float[] nums, float n) {
 //    assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
