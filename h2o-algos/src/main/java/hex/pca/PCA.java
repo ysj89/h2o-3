@@ -17,11 +17,13 @@ import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
-import hex.util.LinearAlgebraUtils.AMulTask;
-import water.*;
+import hex.util.LinearAlgebraUtils.SMulTask;
+import water.DKV;
+import water.H2O;
+import water.HeartBeat;
+import water.Job;
 import water.fvec.Frame;
 import water.rapids.Rapids;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
@@ -213,40 +215,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       buildTables(pca, dinfo.coefNames());
     }
 
-    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram, long nobs) {
-      // Save adapted frame info for scoring later
-      pca._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
-      if(dinfo._normMul == null) {
-        pca._output._normMul = new double[dinfo._nums];
-        Arrays.fill(pca._output._normMul, 1.0);
-      } else
-        pca._output._normMul = dinfo._normMul;
-      pca._output._permutation = dinfo._permutation;
-      pca._output._nnums = dinfo._nums;
-      pca._output._ncats = dinfo._cats;
-      pca._output._catOffsets = dinfo._catOffsets;
-
-      double dfcorr = nobs / (nobs - 1.0);
-      double[] sval = svd.getSingularValues();
-      pca._output._std_deviation = new double[_parms._k];    // Only want first k standard deviations
-      for(int i = 0; i < _parms._k; i++) {
-        sval[i] = dfcorr * sval[i];   // Degrees of freedom = n-1, where n = nobs = # row observations processed
-        pca._output._std_deviation[i] = Math.sqrt(sval[i]);
-      }
-
-      double[][] eigvec = svd.getV().getArray();
-      pca._output._eigenvectors_raw = new double[eigvec.length][_parms._k];   // Only want first k eigenvectors
-      for(int i = 0; i < eigvec.length; i++)
-        System.arraycopy(eigvec[i], 0, pca._output._eigenvectors_raw[i], 0, _parms._k);
-      pca._output._total_variance = dfcorr * gram.diagSum();  // Since gram = X'X/n, but variance requires n-1 in denominator
-      buildTables(pca, dinfo.coefNames());
-    }
-
-
-/*    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
+    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
                                          long nobs) {
       computeStatsFillModel(pca, dinfo, svd.getSingularValues(), svd.getV().getArray(), gram, nobs);
-    }*/
+    }
 
     // Main worker thread
     @Override
@@ -314,22 +286,20 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           _job.update(1, "Computing stats from SVD");
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
           if (_wideDataset) {
-            // compare getting eigenvectors both ways:
-            AMulTask stsk = new AMulTask(dinfo, svdJ.getV().getArray(), _parms._use_all_factor_levels, _parms._k);
-            double[][] eigenVecs = stsk.doAll(dinfo._adaptedFrame)._atq;
-
-/*          Frame tempFrame = new Frame(dinfo._adaptedFrame);
-          Frame eigFrame = new water.util.ArrayUtils().frame(svdJ.getV().getArray());
-          tempFrame.add(eigFrame);
+            // squeeze dataset A and eigenVector matirx U into one frame, tempFrame and use SMulTask to
+            // perform the multiplication of Transpose(A) * U
+            Frame tempFrame = new Frame(dinfo._adaptedFrame);
+            Frame eigFrame = new water.util.ArrayUtils().frame(svdJ.getV().getArray());
+            tempFrame.add(eigFrame);
 
             //tempFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray()));
-           SMulTask stsk2 = new SMulTask(dinfo, svdJ.getV().get     Array().length,
+            SMulTask stsk = new SMulTask(dinfo, svdJ.getV().getArray().length,
                     dinfo._numOffsets[dinfo._numOffsets.length-1]);
-            double[][] eigenVecs = stsk2.doAll(tempFrame)._atq;
+            double[][] eigenVecs = stsk.doAll(tempFrame)._atq;
 
-            if (eigFrame != null) {
+            if (eigFrame != null) { // delete frame to prevent leak keys.
               eigFrame.delete();
-            }*/
+            }
 
             // need to normalize eigenvectors after multiplication by transpose(A) so that they have unit norm
             double[][] eigenVecsTranspose = transpose(eigenVecs);
@@ -430,13 +400,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
 
       } finally {
-
-
-        for( Key k : H2O.localKeySet() ) {
-          Value value = Value.STORE_get(k);
-          if ((value != null) && (value.isFrame()))
-            Log.info(k + " -> " + value.get());
-        }
         if (model != null) {
           model.unlock(_job);
         }
