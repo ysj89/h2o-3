@@ -181,31 +181,31 @@ public class LinearAlgebraUtils {
     @Override public void map(Chunk cs[]) {
       assert (_ncolA) == cs.length;
       _atq = new double[_ncolExp][_K];
+//      _atq = new double[_ncolExp][_ncolX];
 
       for(int k = 0; k < _K; k++) { // go through final matrix each column here
         // Categorical columns
         int cidx;
-        int last_cat;   // absolute index into categorical columns including offsets from previous levels
 
         for(int p = 0; p < _ainfo._cats; p++) { // go through each categorical column
           for(int row = 0; row < cs[0]._len; row++) {
             if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
-            double a = cs[p].atd(row);
+            double a = cs[p].atd(row);    // read the categorical value here
+            double q = _X[row][k];
 
             if (Double.isNaN(a)) {
               if (_ainfo._imputeMissing) {
-                cidx =  _ainfo.catNAFill()[p];   // fill in for value of a to replace NAs
+                cidx = _ainfo.catNAFill()[p];   // fill in for value of a to replace NAs
+              } else if (!_ainfo._catMissing[p]) {
+                continue;
               } else {
                 cidx = _ainfo._catOffsets[p + 1] - 1;     // Otherwise, missing value turns into extra (last) factor
               }
             } else {
               cidx = _ainfo.getCategoricalId(p, (int)a);  // taken care of _useAllFactorLevels
             }
-            last_cat = _ainfo._catOffsets[p+1]-_ainfo._catOffsets[p];
 
-            if (cidx >= 0 || cidx < last_cat) {  // Ignore categorical levels outside domain
-              _atq[cidx][k] += _X[cidx][k];
-            }
+            if(cidx >= 0) _atq[cidx][k] += q;   // Ignore categorical levels outside domain
           }
         }
 

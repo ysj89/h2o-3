@@ -18,12 +18,11 @@ import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import hex.util.LinearAlgebraUtils.AMulTask;
-import water.DKV;
-import water.H2O;
-import water.HeartBeat;
-import water.Job;
+import hex.util.LinearAlgebraUtils.SMulTask;
+import water.*;
 import water.fvec.Frame;
 import water.rapids.Rapids;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
@@ -319,12 +318,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             AMulTask stsk = new AMulTask(dinfo, svdJ.getV().getArray(), _parms._use_all_factor_levels, _parms._k);
             double[][] eigenVecs = stsk.doAll(dinfo._adaptedFrame)._atq;
 
-/*
-            SMulTask stsk = new SMulTask(dinfo, svdJ.getV().getArray().length,
+
+            Frame tempFrame = new Frame(dinfo._adaptedFrame);
+            tempFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray()));
+            SMulTask stsk2 = new SMulTask(dinfo, svdJ.getV().getArray().length,
                     dinfo._numOffsets[dinfo._numOffsets.length-1]);
-            double[][] eigenVecs =
-                    stsk.doAll(dinfo._adaptedFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray())))._atq;
-*/
+            double[][] eigenVecs2 = stsk2.doAll(tempFrame)._atq;
+
             // need to normalize eigenvectors after multiplication by transpose(A) so that they have unit norm
             double[][] eigenVecsTranspose = transpose(eigenVecs);
             double[] eigenNormsI = new double[eigenVecsTranspose.length];
@@ -422,7 +422,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
         model.update(_job);
       } finally {
-        if (model != null) {
+        for( Key k : H2O.localKeySet() ) {
+          Value value = Value.STORE_get(k);
+          if ((value != null) && (value.type() == 12))
+            Log.info(k + " -> " + value.get());
+        }
+
+          if (model != null) {
           model.unlock(_job);
         }
         if (dinfo != null) {
