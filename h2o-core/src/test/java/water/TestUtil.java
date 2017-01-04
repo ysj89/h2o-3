@@ -597,7 +597,12 @@ public class TestUtil extends Iced {
       Vec.Reader vact = actual.vec(j).new Reader();
       Assert.assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
+        if (vexp.isNA(i) || vact.isNA(i)) {
+          continue;
+        }
+        // only perform comparison when data is not NAN
         Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+
       }
     }
     return flipped;

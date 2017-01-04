@@ -18,7 +18,6 @@ import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import hex.util.LinearAlgebraUtils.AMulTask;
-import hex.util.LinearAlgebraUtils.SMulTask;
 import water.*;
 import water.fvec.Frame;
 import water.rapids.Rapids;
@@ -273,6 +272,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           if (_wideDataset && (!_parms._impute_missing) && tranRebalanced.hasNAs()) {
             DKV.put(tranRebalanced._key, tranRebalanced);
             _train = Rapids.exec(String.format("(na.omit %s)", tranRebalanced._key)).getFrame(); // remove NA rows
+            DKV.remove(tranRebalanced._key);
           }
 
           dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
@@ -318,12 +318,18 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             AMulTask stsk = new AMulTask(dinfo, svdJ.getV().getArray(), _parms._use_all_factor_levels, _parms._k);
             double[][] eigenVecs = stsk.doAll(dinfo._adaptedFrame)._atq;
 
+/*          Frame tempFrame = new Frame(dinfo._adaptedFrame);
+          Frame eigFrame = new water.util.ArrayUtils().frame(svdJ.getV().getArray());
+          tempFrame.add(eigFrame);
 
-            Frame tempFrame = new Frame(dinfo._adaptedFrame);
-            tempFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray()));
-            SMulTask stsk2 = new SMulTask(dinfo, svdJ.getV().getArray().length,
+            //tempFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray()));
+           SMulTask stsk2 = new SMulTask(dinfo, svdJ.getV().get     Array().length,
                     dinfo._numOffsets[dinfo._numOffsets.length-1]);
-            double[][] eigenVecs2 = stsk2.doAll(tempFrame)._atq;
+            double[][] eigenVecs = stsk2.doAll(tempFrame)._atq;
+
+            if (eigFrame != null) {
+              eigFrame.delete();
+            }*/
 
             // need to normalize eigenvectors after multiplication by transpose(A) so that they have unit norm
             double[][] eigenVecsTranspose = transpose(eigenVecs);
@@ -421,14 +427,17 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(_job);
+
+
       } finally {
+
+
         for( Key k : H2O.localKeySet() ) {
           Value value = Value.STORE_get(k);
-          if ((value != null) && (value.type() == 12))
+          if ((value != null) && (value.isFrame()))
             Log.info(k + " -> " + value.get());
         }
-
-          if (model != null) {
+        if (model != null) {
           model.unlock(_job);
         }
         if (dinfo != null) {
@@ -437,6 +446,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if (AE != null) {
           AE.remove();
         }
+
       }
     }
   }
