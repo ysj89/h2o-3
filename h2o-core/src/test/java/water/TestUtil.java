@@ -572,6 +572,20 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
+  public static boolean[] checkEigvec(TwoDimTable expected, TwoDimTable actual, double threshold) {
+    int nfeat = actual.getRowDim();
+    int ncomp = actual.getColDim();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
+      for(int i = 0; i < nfeat; i++) {
+        Assert.assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+      }
+    }
+    return flipped;
+  }
+
   public static boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
     assertEquals("Number of columns", expected.numCols(), actual.numCols());
     assertEquals("Number of columns in flipped", expected.numCols(), flipped.length);

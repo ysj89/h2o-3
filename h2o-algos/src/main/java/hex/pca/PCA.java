@@ -17,7 +17,6 @@ import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
-import hex.util.LinearAlgebraUtils.SMulTask;
 import hex.util.LinearAlgebraUtils.AMulTask;
 import water.DKV;
 import water.H2O;
@@ -317,21 +316,23 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
           if (_wideDataset) {
             // compare getting eigenvectors both ways:
-            AMulTask stsk2 = new AMulTask(dinfo, svdJ.getV().getArray(), _parms._use_all_factor_levels, _parms._k);
-            double[][] eigenVecs2 = stsk2.doAll(dinfo._adaptedFrame)._atq;
+            AMulTask stsk = new AMulTask(dinfo, svdJ.getV().getArray(), _parms._use_all_factor_levels, _parms._k);
+            double[][] eigenVecs = stsk.doAll(dinfo._adaptedFrame)._atq;
 
+/*
             SMulTask stsk = new SMulTask(dinfo, svdJ.getV().getArray().length,
                     dinfo._numOffsets[dinfo._numOffsets.length-1]);
             double[][] eigenVecs =
                     stsk.doAll(dinfo._adaptedFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray())))._atq;
+*/
             // need to normalize eigenvectors after multiplication by transpose(A) so that they have unit norm
-            double[] eigenNormsI = new double[eigenVecs.length];
             double[][] eigenVecsTranspose = transpose(eigenVecs);
-            for (int vecIndex = 0; vecIndex < eigenVecs.length; vecIndex++) {
+            double[] eigenNormsI = new double[eigenVecsTranspose.length];
+            for (int vecIndex = 0; vecIndex < eigenVecsTranspose.length; vecIndex++) {
               eigenNormsI[vecIndex] = 1.0/l2norm(eigenVecsTranspose[vecIndex]);
             }
-            computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), mult(eigenVecs, eigenNormsI),
-                    gram, model._output._nobs);
+            eigenVecs = transpose(mult(eigenVecsTranspose, eigenNormsI));
+            computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), eigenVecs, gram, model._output._nobs);
           } else {
             computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
           }

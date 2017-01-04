@@ -180,9 +180,9 @@ public class LinearAlgebraUtils {
 
     @Override public void map(Chunk cs[]) {
       assert (_ncolA) == cs.length;
-      _atq = new double[_ncolExp][_ncolX];
+      _atq = new double[_ncolExp][_K];
 
-      for(int k = 0; k < _ncolX; k++) { // go through final matrix each column here
+      for(int k = 0; k < _K; k++) { // go through final matrix each column here
         // Categorical columns
         int cidx;
         int last_cat;   // absolute index into categorical columns including offsets from previous levels
