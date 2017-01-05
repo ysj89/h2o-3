@@ -292,7 +292,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             Frame eigFrame = new water.util.ArrayUtils().frame(svdJ.getV().getArray());
             tempFrame.add(eigFrame);
 
-            //tempFrame.add(new water.util.ArrayUtils().frame(svdJ.getV().getArray()));
             SMulTask stsk = new SMulTask(dinfo, svdJ.getV().getArray().length,
                     dinfo._numOffsets[dinfo._numOffsets.length-1]);
             double[][] eigenVecs = stsk.doAll(tempFrame)._atq;
@@ -409,7 +408,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if (AE != null) {
           AE.remove();
         }
-
       }
     }
   }

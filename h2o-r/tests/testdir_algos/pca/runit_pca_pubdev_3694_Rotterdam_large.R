@@ -1,36 +1,46 @@
-library(h2o)
-h2o.init(nthreads = -1, max_mem_size = "8G")
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
+check.pca.widedata.gramSVD <- function() {
+    df <- h2o.importFile(locate("bigdata/laptop/jira/rotterdam.csv.zip"), destination_frame="df")
+    y <- "relapse"
+    x <- setdiff(names(df), y)
+    df[,y] <- as.factor(df[,y])  #Convert to factor (for binary classification)
+    
+    # show that pca can run with wide dataset and not throw an error or fit
+    h2o_pca <- h2o.prcomp(df, k = 8, x = x, transform = 'STANDARDIZE', impute_missing = TRUE);
 
-file <- "/Users/wendycwong/h2o-3/bigdata/laptop/jira/rotterdam.csv.zip"
-df <- h2o.importFile(file)
-dim(df)  # 286 22284
+    # remove NAs and compare our accuracy with R's PCA
+    df <- na.omit(df)
+    # generate a R data frame from h2o dataframe for R to use
+    dfR = as.data.frame(df)
+    dfR = dfR[x]
 
-y <- "relapse"
-x <- setdiff(names(df), y)
-df[,y] <- as.factor(df[,y])  #Convert to factor (for binary classification)
+    ranks = 8
+    pcaR <- prcomp(dfR, center = TRUE, scale. = TRUE, rank.=ranks)      # train R PCA
+    h2o_pca <- h2o.prcomp(df, k = ranks, x = x, transform = 'STANDARDIZE', seed=12345)      # train H2O PCA
 
+    # the eigenvectors and eigvalues calculated from R and H2O are close but not equal
+    # We will not use this measure to determine if our PCA wide dataset is performing well.
+    isFlipped1 <- checkPCAModel(h2o_pca, pcaR, tolerance=8)
 
-splits <- h2o.splitFrame(df, seed = 1)
-train <- splits[[1]]
-test <- splits[[2]]
-print(dim(train))
-print(dim(test))
+    Log.info("Compare Projections into PC space")
+    predR <- predict(pcaR, dfR)
+    predH2O <- predict(h2o_pca, df)
 
+    reConstructedR <- genReconstructedData(pcaR$rotation[,1:ranks], predR[, 1:ranks])
+    reConstructedH2O <- genReconstructedData(h2o_pca@model$eigenvectors, predH2O)
 
-# Does not work:
-# Train a default PCA
-h2o_pca <- h2o.prcomp(train, k = 8, x = x)
+    # scale the original data frame and do comparison
+    ndfR = scale(as.matrix(dfR))
+    maxDiffR = max(abs(ndfR-reConstructedR))
+    maxDiffH2O = max(abs(ndfR-reConstructedH2O))
 
-#Error: java.lang.IllegalArgumentException: Found validation errors: ERRR on field: _train: Gram matrices (one per thread) won't fit in the driver node's memory (59.19 GB > 6.93 GB) - try reducing the number of columns and/or the number of categorical factors.
-# Also kills the H2O cluster!
+    browser()
+    # This is the metric we use to figure out if our PCA is performing.  We compare the difference of the
+    # maximum error of the reconstructed dataset to the original data set.  If the maximum error from
+    # our PCA and R PCA are close, we call it a day and declare that our PCA wide dataset is working.
+    expect_true(abs(maxDiffR-maxDiffH2O) < 0.1, "R and H2O PCA reconstructed dataset differs too much!")
+}
 
-
-# Try again with Power method instead, but this errors out and kills the cluster!
-# Train a PCA model using 20 principal components.
-h2o_pca20 <- h2o.prcomp(train,
-x = x, k = 20,
-transform = "STANDARDIZE",
-pca_method = "Power",
-use_all_factor_levels = TRUE,
-seed = 1)
+doTest("PUBDEV-3694: PCA with wide dataset and GramSVD", check.pca.widedata.gramSVD)
