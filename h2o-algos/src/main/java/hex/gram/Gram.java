@@ -683,7 +683,7 @@ public final class Gram extends Iced<Gram> {
     if (catOffsets != null) {
       for (int j = 0; j < rowi.nBins; ++j) {
         if (rowi.binIds[j] == rowj.binIds[j]) {
-          elementij += weights*(catOffsets[j+1]-catOffsets[j]);
+          elementij += weights;
         }
       }
     }
