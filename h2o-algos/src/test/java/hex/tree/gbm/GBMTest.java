@@ -2697,4 +2697,106 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void highCardinalityLowNbinsCats() { highCardinality(2000); }
+  @Test public void highCardinalityHighNbinsCats() { highCardinality(6000); }
+
+  public void highCardinality(int nbins_cats) {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame train=null, test=null, train_preds=null, test_preds=null;
+    Scope.enter();
+    try {
+      {
+        CreateFrame cf = new CreateFrame();
+        cf.rows = 10000;
+        cf.cols = 10;
+        cf.integer_range = 1000;
+        cf.categorical_fraction = 1.0;
+        cf.integer_fraction = 0.0;
+        cf.binary_fraction = 0.0;
+        cf.time_fraction = 0.0;
+        cf.string_fraction = 0.0;
+        cf.binary_ones_fraction = 0.0;
+        cf.missing_fraction = 0.2;
+        cf.factors = 3000;
+        cf.response_factors = 2;
+        cf.positive_response = false;
+        cf.has_response = true;
+        cf.seed = 1235;
+        cf.seed_for_column_types = 1234;
+        train = cf.execImpl().get();
+      }
+
+      {
+        CreateFrame cf = new CreateFrame();
+        cf.rows = 10000;
+        cf.cols = 10;
+        cf.integer_range = 1000;
+        cf.categorical_fraction = 1.0;
+        cf.integer_fraction = 0.0;
+        cf.binary_fraction = 0.0;
+        cf.time_fraction = 0.0;
+        cf.string_fraction = 0.0;
+        cf.binary_ones_fraction = 0.0;
+        cf.missing_fraction = 0.2;
+        cf.factors = 5000;
+        cf.response_factors = 2;
+        cf.positive_response = false;
+        cf.has_response = true;
+        cf.seed = 5321;
+        cf.seed_for_column_types = 1234;
+        test = cf.execImpl().get();
+      }
+
+      parms._train = train._key;
+      parms._response_column = "response"; // Train on the outcome
+      parms._max_depth = 20; //allow it to overfit
+      parms._min_rows = 1;
+      parms._ntrees = 1;
+      parms._nbins_cats = nbins_cats;
+      parms._seed = 0x2834234;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      train_preds = gbm.score(train);
+
+      test_preds = gbm.score(test);
+
+      new MRTask() {
+        public void map(Chunk c) {
+          for (int i=0;i<c._len;++i)
+            if (c.isNA(i))
+              c.set(i, 0.5);
+        }
+      }.doAll(train.vec("response"));
+
+      new MRTask() {
+        public void map(Chunk c) {
+          for (int i=0;i<c._len;++i)
+            if (c.isNA(i))
+              c.set(i, 0.5);
+        }
+      }.doAll(test.vec("response"));
+
+      Log.info("Train AUC: " + ModelMetricsBinomial.make(train_preds.vec(2), train.vec("response")).auc());
+      Log.info("Test AUC: " + ModelMetricsBinomial.make(test_preds.vec(2), test.vec("response")).auc());
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(train, train_preds, 1e-15));
+      Key old = gbm._key;
+      gbm._key = Key.make(gbm._key + "ha");
+      Assert.assertTrue(gbm.testJavaScoring(test, test_preds, 1e-15));
+      DKV.remove(old);
+
+    } finally {
+      if( gbm  != null ) gbm .delete();
+      if( train != null ) train.remove();
+      if( test != null ) test.remove();
+      if( train_preds  != null ) train_preds .remove();
+      if( test_preds  != null ) test_preds .remove();
+      Scope.exit();
+    }
+  }
+
 }
