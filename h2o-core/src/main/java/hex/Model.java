@@ -866,9 +866,31 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             assert ds != null && ds.length >= domains[i].length;
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
-            if (ds.length > domains[i].length)
+            Vec newvec = null;
+            if (ds.length > domains[i].length) {
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
-            vec = evec;  good++;
+              if (!isResponse) {
+                Log.info(":HOTFIX: Turning unseen categoricals levels into NA to make the behavior consistent with POJO/MOJO EasyPredictWrapper");
+                final int len = domains[i].length;
+                newvec = new MRTask() {
+                  @Override
+                  public void map(Chunk c, NewChunk nc) {
+                    for (int i=0;i<c._len;++i) {
+                      if (c.isNA(i) || (int)(c.at8(i)) >= len) nc.addNA();
+                      else nc.addNum(c.at8(i),0);
+                    }
+                  }
+                }.doAll(1, Vec.T_CAT, new Frame(evec)).outputFrame().anyVec();
+                newvec.setDomain(domains[i]);
+              }
+            }
+            if (newvec!=null) {
+              vec = newvec;
+              evec.remove();
+            } else {
+              vec = evec;
+            }
+            good++;
           } else {
             good++;
           }
