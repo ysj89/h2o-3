@@ -49,6 +49,8 @@ def hdfs_orc_parser():
                 h2oOrc = h2o.import_file(url_orc)
                 h2oCsv = h2o.import_file(url_csv)
 
+                print("Comparing files {0} and {1}\n.".format(allOrcFiles[fIndex], allCsvFiles[fIndex]))
+
                 # compare the two frames
                 assert pyunit_utils.compare_frames(h2oOrc, h2oCsv, numElements2Compare, tol_time, tol_numeric), \
                     "H2O frame parsed from orc and csv files are different!"
