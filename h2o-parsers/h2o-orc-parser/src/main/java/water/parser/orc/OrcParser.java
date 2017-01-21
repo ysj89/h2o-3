@@ -186,7 +186,7 @@ public class OrcParser extends Parser {
   private long correctTimeStamp(long daysSinceEpoch) {
     //long timestamp = (daysSinceEpoch*DAY_TO_MS+ADD_OFFSET); // we are high by ADD_OFFSET, 28800000
     //long timestamp = (daysSinceEpoch*DAY_TO_MS);  // now we are low by DAY_TO_MS-ADD_OFFSET, -57600000
-    long timestamp = (daysSinceEpoch*DAY_TO_MS+DAY_TO_MS-ADD_OFFSET);
+    long timestamp = (daysSinceEpoch*DAY_TO_MS+DAY_TO_MS-2*ADD_OFFSET);
     DateTime date = new DateTime(timestamp);
     int hour = date.hourOfDay().get();
     if (hour == 0)
