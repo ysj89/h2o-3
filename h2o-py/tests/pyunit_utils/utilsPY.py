@@ -2669,6 +2669,8 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
         if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
             diff = abs(val1-val2)
             print("val1 is orc: {0} and val2 (csv) is {1}.  The difference is {2}\n".format(val1, val2, val1-val2))
+        else:
+            continue
 #            assert diff <= tolerance, "failed frame values check! frame1 value = {0}, frame2 value =  {1}, " \
 #                                      "at row {2}, column {3}.  The difference is {4}.".format(val1, val2, row_ind,
 #                                                                                               col_ind, diff)
