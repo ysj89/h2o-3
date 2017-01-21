@@ -57,8 +57,8 @@ def hdfs_orc_parser():
                 for col_ind in range(h2oOrc.ncols):
                     for row_ind in range(h2oOrc.nrows):
 
-                        val1 = url_orc[row_ind, col_ind]
-                        val2 = url_csv[row_ind, col_ind]
+                        val1 = h2oOrc[row_ind, col_ind]
+                        val2 = h2oCsv[row_ind, col_ind]
 
                         if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
                             diff = abs(val1-val2)
