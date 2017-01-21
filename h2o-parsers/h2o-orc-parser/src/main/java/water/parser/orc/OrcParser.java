@@ -184,7 +184,8 @@ public class OrcParser extends Parser {
    * @return long: correct timestamp corresponding to daysSinceEpoch
    */
   private long correctTimeStamp(long daysSinceEpoch) {
-    long timestamp = (daysSinceEpoch*DAY_TO_MS+ADD_OFFSET);
+    //long timestamp = (daysSinceEpoch*DAY_TO_MS+ADD_OFFSET);
+    long timestamp = (daysSinceEpoch*DAY_TO_MS);
     DateTime date = new DateTime(timestamp);
     int hour = date.hourOfDay().get();
     if (hour == 0)
