@@ -53,7 +53,7 @@ def hdfs_orc_parser():
                 print("*** Comparing files {0} and {1}\n.".format(allOrcFiles[fIndex], allCsvFiles[fIndex]))
 
                 for col_ind in range(h2oOrc.ncols):
-                    for row_ind in range(h2oOrc.nrows):
+                    for row_ind in range(10):
 
                         val1 = h2oOrc[row_ind, col_ind]
                         val2 = h2oCsv[row_ind, col_ind]
