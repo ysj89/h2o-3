@@ -196,11 +196,12 @@ public class OrcParser extends Parser {
 
 
   private long correctTimeStamp(long timestamp) {
-    if (timestamp > 0) {
+    return (timestamp/1000000);
+/*    if (timestamp > 0) {
       return (timestamp / 1000000-ADD_OFFSET);
     } else {
       return (timestamp / 1000000-ADD_OFFSET);
-    }
+    }*/
   }
 
   /**
