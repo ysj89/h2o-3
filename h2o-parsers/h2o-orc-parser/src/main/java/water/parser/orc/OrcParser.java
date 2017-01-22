@@ -188,9 +188,9 @@ public class OrcParser extends Parser {
     DateTime date = new DateTime(timestamp);
     int hour = date.hourOfDay().get();
     if (hour == 0)
-      return timestamp;
+      return (timestamp-ADD_OFFSET);
     else
-      return (timestamp-hour*HOUR_OFFSET);
+      return (timestamp-hour*HOUR_OFFSET-ADD_OFFSET);
   }
 
   /**
