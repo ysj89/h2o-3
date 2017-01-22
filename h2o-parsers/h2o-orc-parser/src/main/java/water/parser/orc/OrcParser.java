@@ -49,6 +49,7 @@ public class OrcParser extends Parser {
   public static final int DAY_TO_MS = 24*3600*1000;
   public static final int ADD_OFFSET = 8*3600*1000;
   public static final int HOUR_OFFSET = 3600000;  // in ms to offset for leap seconds, years
+  public static final int NEG_OFFSET = ADD_OFFSET-HOUR_OFFSET;
   private MutableDateTime epoch = new MutableDateTime();  // used to help us out the leap seconds, years
   private ArrayList<String> storeWarnings = new ArrayList<String>();  // store a list of warnings
 
@@ -183,7 +184,7 @@ public class OrcParser extends Parser {
    * @param daysSinceEpoch: number of days since epoch (1970 1/1)
    * @return long: correct timestamp corresponding to daysSinceEpoch
    */
-  private long correctTimeStamp(long daysSinceEpoch) {
+  private long correctDateTimeStamp(long daysSinceEpoch) {
     long timestamp = (daysSinceEpoch*DAY_TO_MS+ADD_OFFSET);
     DateTime date = new DateTime(timestamp);
     int hour = date.hourOfDay().get();
@@ -191,6 +192,15 @@ public class OrcParser extends Parser {
       return (timestamp-ADD_OFFSET);
     else
       return (timestamp-hour*HOUR_OFFSET-ADD_OFFSET);
+  }
+
+
+  private long correctTimeStamp(long timestamp) {
+    if (timestamp > 0) {
+      return (timestamp / 1000000-NEG_OFFSET);
+    } else {
+      return (timestamp / 1000000-ADD_OFFSET);
+    }
   }
 
   /**
@@ -207,19 +217,19 @@ public class OrcParser extends Parser {
     boolean timestamp = columnType.equals("timestamp");
     long [] oneColumn = col.vector;
     if(col.isRepeating) {
-      long val = timestamp ? oneColumn[0] / 1000000-ADD_OFFSET : correctTimeStamp(oneColumn[0]);
+      long val = timestamp ? correctTimeStamp(oneColumn[0]) : correctDateTimeStamp(oneColumn[0]);
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
         dout.addNumCol(cIdx, val, 0);
     } else if(col.noNulls) {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000-ADD_OFFSET : correctTimeStamp(oneColumn[rowIndex]), 0);
+        dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[0]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
     } else {
       boolean[] isNull = col.isNull;
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
         else
-          dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000-ADD_OFFSET : correctTimeStamp(oneColumn[rowIndex]), 0);
+          dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[0]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
       }
     }
   }
