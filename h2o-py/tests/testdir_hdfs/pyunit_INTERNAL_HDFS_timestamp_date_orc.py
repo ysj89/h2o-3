@@ -70,15 +70,15 @@ def hdfs_orc_parser():
                     for col_ind in range(h2oOrc.ncols):
                         for row_ind in range(30):
 
-                        val1 = h2oOrc[row_ind, col_ind]
-                        val2 = h2oCsv[row_ind, col_ind]
-                        if not(type(val1 == float)):
-                            break
+                            val1 = h2oOrc[row_ind, col_ind]
+                            val2 = h2oCsv[row_ind, col_ind]
+                            if not(type(val1 == float)):
+                                break
 
-                        if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
-                            print("val1 is orc: {0} and val2 (csv) is {1}.  The difference is {2}\n".format(val1, val2, val1-val2))
-                        else:
-                            continue
+                            if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
+                                print("val1 is orc: {0} and val2 (csv) is {1}.  The difference is {2}\n".format(val1, val2, val1-val2))
+                            else:
+                                continue
 
 
     else:
