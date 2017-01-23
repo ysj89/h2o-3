@@ -68,7 +68,7 @@ def hdfs_orc_parser():
                                 continue
                 else:
                     col_ind = 4
-                    for row_ind in range(10):
+                    for row_ind in range(38):
 
                         val1 = h2oOrc[row_ind, col_ind]
                         val2 = h2oCsv[row_ind, col_ind]
