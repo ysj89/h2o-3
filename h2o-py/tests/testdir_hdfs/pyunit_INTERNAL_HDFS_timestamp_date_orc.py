@@ -36,11 +36,13 @@ def hdfs_orc_parser():
             tol_numeric = 1e-5          # tolerance for comparing other numeric fields
             numElements2Compare = 100   # choose number of elements per column to compare.  Save test time.
 
-            allOrcFiles = ["/datasets/orc_parser/orc/TestOrcFile.testDate1900.orc",
+            allOrcFiles = ["/datasets/orc_parser/orc/testTimeStamp.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testDate1900.orc",
                            "/datasets/orc_parser/orc/TestOrcFile.testDate2038.orc",
                            "/datasets/orc_parser/orc/orc_split_elim.orc"]
 
-            allCsvFiles = ["/datasets/orc_parser/csv/TestOrcFile.testDate1900.csv",
+            allCsvFiles = ["/datasets/orc_parser/csv/testTimeStamp.csv",
+                           "/datasets/orc_parser/csv/TestOrcFile.testDate1900.csv",
                            "/datasets/orc_parser/csv/TestOrcFile.testDate2038.csv",
                            "/datasets/orc_parser/csv/orc_split_elim.csv"]
 
@@ -53,7 +55,7 @@ def hdfs_orc_parser():
                 print("*** Comparing files {0} and {1}\n.".format(allOrcFiles[fIndex], allCsvFiles[fIndex]))
                 if (fIndex < 2):
                     for col_ind in range(h2oOrc.ncols):
-                        for row_ind in range(10):
+                        for row_ind in range(30):
 
                             val1 = h2oOrc[row_ind, col_ind]
                             val2 = h2oCsv[row_ind, col_ind]
