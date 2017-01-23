@@ -49,7 +49,6 @@ public class OrcParser extends Parser {
   public static final int DAY_TO_MS = 24*3600*1000;
   public static final int ADD_OFFSET = 8*3600*1000;
   public static final int HOUR_OFFSET = 3600000;  // in ms to offset for leap seconds, years
-  public static final int NEG_OFFSET = ADD_OFFSET-HOUR_OFFSET;
   private MutableDateTime epoch = new MutableDateTime();  // used to help us out the leap seconds, years
   private ArrayList<String> storeWarnings = new ArrayList<String>();  // store a list of warnings
 
@@ -194,16 +193,6 @@ public class OrcParser extends Parser {
       return (timestamp-hour*HOUR_OFFSET-ADD_OFFSET);
   }
 
-
-  private long correctTimeStamp(long timestamp) {
-    return (timestamp/1000000);
-/*    if (timestamp > 0) {
-      return (timestamp / 1000000-ADD_OFFSET);
-    } else {
-      return (timestamp / 1000000-ADD_OFFSET);
-    }*/
-  }
-
   /**
    * This method writes one column of H2O frame for column type timestamp.  This is just a long that
    * records the number of seconds since Jan 1, 2015.
@@ -218,19 +207,19 @@ public class OrcParser extends Parser {
     boolean timestamp = columnType.equals("timestamp");
     long [] oneColumn = col.vector;
     if(col.isRepeating) {
-      long val = timestamp ? correctTimeStamp(oneColumn[0]) : correctDateTimeStamp(oneColumn[0]);
+      long val = timestamp ? oneColumn[0] / 1000000 : correctDateTimeStamp(oneColumn[0]);
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
         dout.addNumCol(cIdx, val, 0);
     } else if(col.noNulls) {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[rowIndex]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+        dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
     } else {
       boolean[] isNull = col.isNull;
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
         else
-          dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[rowIndex]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+          dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
       }
     }
   }
