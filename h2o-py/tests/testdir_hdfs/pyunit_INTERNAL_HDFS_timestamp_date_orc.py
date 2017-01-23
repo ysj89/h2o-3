@@ -53,20 +53,7 @@ def hdfs_orc_parser():
                 h2oCsv = h2o.import_file(url_csv)
 
                 print("*** Comparing files {0} and {1}\n.".format(allOrcFiles[fIndex], allCsvFiles[fIndex]))
-                if (fIndex < 2):
-                    for col_ind in range(h2oOrc.ncols):
-                        for row_ind in range(30):
-
-                            val1 = h2oOrc[row_ind, col_ind]
-                            val2 = h2oCsv[row_ind, col_ind]
-                            if not(type(val1 == float)):
-                                break
-
-                            if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
-                                print("val1 is orc: {0} and val2 (csv) is {1}.  The difference is {2}\n".format(val1, val2, val1-val2))
-                            else:
-                                continue
-                else:
+                if (fIndex == 3):
                     col_ind = 4
                     for row_ind in range(38):
 
@@ -79,6 +66,21 @@ def hdfs_orc_parser():
                             print("val1 is orc: {0} and val2 (csv) is {1}.  The difference is {2}\n".format(val1, val2, val1-val2))
                         else:
                             continue
+                else:
+                    for col_ind in range(h2oOrc.ncols):
+                        for row_ind in range(30):
+
+                        val1 = h2oOrc[row_ind, col_ind]
+                        val2 = h2oCsv[row_ind, col_ind]
+                        if not(type(val1 == float)):
+                            break
+
+                        if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
+                            print("val1 is orc: {0} and val2 (csv) is {1}.  The difference is {2}\n".format(val1, val2, val1-val2))
+                        else:
+                            continue
+
+
     else:
         raise EnvironmentError
 
