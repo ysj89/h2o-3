@@ -223,14 +223,14 @@ public class OrcParser extends Parser {
         dout.addNumCol(cIdx, val, 0);
     } else if(col.noNulls) {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[0]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+        dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[rowIndex]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
     } else {
       boolean[] isNull = col.isNull;
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
         else
-          dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[0]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+          dout.addNumCol(cIdx, timestamp ? correctTimeStamp(oneColumn[rowIndex]) : correctDateTimeStamp(oneColumn[rowIndex]), 0);
       }
     }
   }
