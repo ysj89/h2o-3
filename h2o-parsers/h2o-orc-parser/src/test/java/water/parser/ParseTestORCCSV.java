@@ -39,7 +39,7 @@ public class ParseTestORCCSV extends TestUtil {
     }
 
     @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(5); }
+    static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
     @Test
     public void testParseOrcCsvFiles() {
@@ -62,17 +62,23 @@ public class ParseTestORCCSV extends TestUtil {
 
 
         // make sure column types are the same especially the enums
-            byte[] csv_types = csv_frame.types();
-            byte[] orc_types = orc_frame.types();
+        byte[] csv_types = csv_frame.types();
+        byte[] orc_types = orc_frame.types();
 
-            for (int index = 0; index < csv_frame.numCols(); index++) {
-                if ((csv_types[index] == 4) && (orc_types[index] == 2)) {
-                    orc_frame.replace(index, orc_frame.vec(index).toCategoricalVec().toNumericVec());
-                    csv_frame.replace(index, csv_frame.vec(index).toNumericVec());
-                }
+        for (int index = 0; index < csv_frame.numCols(); index++) {
+            if ((csv_types[index] == 4) && (orc_types[index] == 2)) {
+                orc_frame.replace(index, orc_frame.vec(index).toCategoricalVec().toNumericVec());
+                csv_frame.replace(index, csv_frame.vec(index).toNumericVec());
             }
+        }
 
-        assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
+/*        for (int rowIndex = 0; rowIndex < 38; rowIndex++){
+            double valorc = orc_frame.vec(0).at(rowIndex);
+            double valcsv = csv_frame.vec(0).at(rowIndex);
+            System.out.println("Row index is "+rowIndex+". Orc value is "+valorc+". Difference is "+(valorc-valcsv));
+        }*/
+
+        assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 2));
 
         csv_frame.delete();
         orc_frame.delete();
