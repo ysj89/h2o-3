@@ -23,8 +23,11 @@ def h2oshow_progress():
         s = StringIO()
         sys.stdout = s   # redirect output
         h2o.show_progress()   # true by default.
+        print("performing h2o.upload_file")
         training_data = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
+        print("perform h2o.import_file")
         training_data2 = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
+        print("Done performing h2o.import_file")
         print(training_data2.ncols)
         Y = 3
         X = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10]
@@ -34,6 +37,7 @@ def h2oshow_progress():
         # make sure the word progress is found and % is found.  That is how progress is displayed.
         assert ("progress" in s.getvalue()) and ("100%" in s.getvalue()), "h2o.show_progress() command is not working."
     except Exception as e:  # will get error for python 2
+        print("going down the python 2 path.")
         sys.stdout=sys.__stdout__       # restore old stdout
         assert_is_type(e, AttributeError)   # error for using python 2
         assert "encoding" in e.args[0], "h2o.show_progress() command is not working."
@@ -42,6 +46,8 @@ def h2oshow_progress():
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oshow_progress)
+    sys.stdout.flush()
 else:
     h2oshow_progress()
+    sys.stdout.flush()
 
