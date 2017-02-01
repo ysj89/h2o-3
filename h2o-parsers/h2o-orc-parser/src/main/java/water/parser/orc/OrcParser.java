@@ -213,7 +213,7 @@ public class OrcParser extends Parser {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         dout.addNumCol(cIdx, val, 0);
 
-        if ((cIdx == 0) && timestamp && (rowIndex < 10))
+        if (timestamp)
           Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
       }
     } else if(col.noNulls) {
@@ -221,8 +221,8 @@ public class OrcParser extends Parser {
         dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
 
 
-        if ((cIdx == 0) && timestamp && (rowIndex < 10))
-          Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
+        if (timestamp )
+          Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[rowIndex]/1000000));
 
 
       }
@@ -234,8 +234,8 @@ public class OrcParser extends Parser {
         else {
           dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
 
-          if ((cIdx == 0) && timestamp && (rowIndex < 10))
-            Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
+          if (timestamp)
+            Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[rowIndex]/1000000));
 
         }
       }

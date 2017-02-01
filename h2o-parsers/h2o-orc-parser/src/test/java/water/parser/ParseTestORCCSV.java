@@ -22,12 +22,14 @@ import static org.junit.Assert.assertTrue;
  */
 public class ParseTestORCCSV extends TestUtil {
 
-    private String[] csvFiles = {"smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv",
+    private String[] csvFiles = {"smalldata/parser/orc/orc2csv/testTimeStamp.csv",
+            "smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv",
             "smalldata/parser/orc/orc2csv/TestOrcFile.testDate2038.csv",
             "smalldata/parser/orc/orc2csv/orc_split_elim.csv", "smalldata/parser/csv2orc/prostate_NA.csv",
             "smalldata/iris/iris.csv", "smalldata/jira/hexdev_29.csv"};
 
-    private String[] orcFiles = {"smalldata/parser/orc/TestOrcFile.testDate1900.orc",
+    private String[] orcFiles = {"smalldata/parser/orc/testTimeStamp.orc",
+            "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
             "smalldata/parser/orc/TestOrcFile.testDate2038.orc", "smalldata/parser/orc/orc_split_elim.orc",
             "smalldata/parser/orc/prostate_NA.orc", "smalldata/parser/orc/iris.orc",
             "smalldata/parser/orc/hexdev_29.orc"};
