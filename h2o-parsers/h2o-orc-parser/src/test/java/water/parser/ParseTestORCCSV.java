@@ -9,6 +9,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * Test suite for orc parser.
  *
@@ -79,10 +81,10 @@ public class ParseTestORCCSV extends TestUtil {
             DateTime csvDT = new DateTime(valcsv);
             Log.info("orc time is "+orcDT.toString());
             Log.info("csv time is "+csvDT.toString());
-            Log.info("Row index is "+rowIndex+". Orc value is "+valorc+". Difference is "+(valorc-valcsv));
+            Log.info("Row index is "+rowIndex+". Orc value is "+valorc+".  Csv value is "+valcsv+". Difference is "+(valorc-valcsv));
         }
 
-        //assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e20));
+        assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-6));
 
         csv_frame.delete();
         orc_frame.delete();

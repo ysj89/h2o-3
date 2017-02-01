@@ -15,6 +15,7 @@ import water.Key;
 import water.fvec.Vec;
 import water.parser.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -206,20 +207,37 @@ public class OrcParser extends Parser {
                                int rowNumber, ParseWriter dout) {
     boolean timestamp = columnType.equals("timestamp");
     long [] oneColumn = col.vector;
+
     if(col.isRepeating) {
-      long val = timestamp ? (long) oneColumn[0] / 1000000 : correctDateTimeStamp(oneColumn[0]);
-      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
+      long val = timestamp ? oneColumn[0] / 1000000 : correctDateTimeStamp(oneColumn[0]);
+      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         dout.addNumCol(cIdx, val, 0);
+
+        if ((cIdx == 0) && timestamp && (rowIndex < 10))
+          Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
+      }
     } else if(col.noNulls) {
-      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addNumCol(cIdx, timestamp ? (long) oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
+        dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+
+
+        if ((cIdx == 0) && timestamp && (rowIndex < 10))
+          Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
+
+
+      }
     } else {
       boolean[] isNull = col.isNull;
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
-        else
-          dout.addNumCol(cIdx, timestamp ? (long) oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+        else {
+          dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
+
+          if ((cIdx == 0) && timestamp && (rowIndex < 10))
+            Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
+
+        }
       }
     }
   }
