@@ -24,6 +24,8 @@ def h2oshow_progress():
         sys.stdout = s   # redirect output
         h2o.show_progress()   # true by default.
         training_data = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
+        training_data2 = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
+        print(training_data2.ncols)
         Y = 3
         X = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10]
         model = H2OGeneralizedLinearEstimator(family="binomial", alpha=0, Lambda=1e-5)
