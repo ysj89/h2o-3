@@ -35,7 +35,10 @@ def orc_parser_timestamp_date():
     for fIndex in range(len(allOrcFiles)):
 
         h2oOrc = h2o.import_file(path=pyunit_utils.locate(allOrcFiles[fIndex]))
-        h2oCsv = h2o.import_file(path=pyunit_utils.locate(allCsvFiles[fIndex]))
+        h2oOrcUpload = h2o.upload_file(path=pyunit_utils.locate(allOrcFiles[fIndex]))
+
+        assert h2oOrc.ncol == h2oOrcUpload.ncol, "frames are different."
+        h2oCsv = h2o.upload_file(path=pyunit_utils.locate(allCsvFiles[fIndex]))
 
         # compare the two frames
         assert pyunit_utils.compare_frames(h2oOrc, h2oCsv, numElements2Compare, tol_time, tol_numeric), \

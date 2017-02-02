@@ -46,6 +46,7 @@ public class ParseTestORCCSV extends TestUtil {
     @Test
     public void testParseOrcCsvFiles() {
         int f_index = 0;
+
         Frame csv_frame = parse_test_file(csvFiles[f_index], "\\N", 0, null);
         Frame orc_frame = null;
 
@@ -74,7 +75,7 @@ public class ParseTestORCCSV extends TestUtil {
             }
         }
 
-        if (f_index < 3) {
+        if (f_index < 2) {
             for (int colIndex = 0; colIndex < 2; colIndex++) {
                 for (int rowIndex = 0; rowIndex < 38; rowIndex++) {
                     long valorc = (long) orc_frame.vec(colIndex).at8(rowIndex);
