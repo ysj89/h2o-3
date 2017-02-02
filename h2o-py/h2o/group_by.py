@@ -36,6 +36,17 @@ class GroupBy(object):
     """
 
     def __init__(self, fr, by):
+        """
+        Return a new ``GroupBy`` object using the H2OFrame specified in fr and the desired grouping columns
+        specified in by.  The original H2O frame will be stored as member _fr.  Information on the new
+        grouping of the original frame is described in a new H2OFrame in member frame.
+
+        The returned groups are sorted by the natural group-by column sort.
+
+        :param fr: H2OFrame that you want the group by operation to be performed on.
+        :param by: The columns to group on (either a single column name, or a list of column names, or
+            a list of column indices).
+        """
         self._fr = fr  # IN
         self._by = by  # IN
         self._aggs = {}  # IN
