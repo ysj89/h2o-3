@@ -22,14 +22,12 @@ import static org.junit.Assert.assertTrue;
  */
 public class ParseTestORCCSV extends TestUtil {
 
-    private String[] csvFiles = {"smalldata/parser/orc/orc2csv/testTimeStamp.csv",
-            "smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv",
+    private String[] csvFiles = {"smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv",
             "smalldata/parser/orc/orc2csv/TestOrcFile.testDate2038.csv",
             "smalldata/parser/orc/orc2csv/orc_split_elim.csv", "smalldata/parser/csv2orc/prostate_NA.csv",
             "smalldata/iris/iris.csv", "smalldata/jira/hexdev_29.csv"};
 
-    private String[] orcFiles = {"smalldata/parser/orc/testTimeStamp.orc",
-            "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
+    private String[] orcFiles = {"smalldata/parser/orc/TestOrcFile.testDate1900.orc",
             "smalldata/parser/orc/TestOrcFile.testDate2038.orc", "smalldata/parser/orc/orc_split_elim.orc",
             "smalldata/parser/orc/prostate_NA.orc", "smalldata/parser/orc/iris.orc",
             "smalldata/parser/orc/hexdev_29.orc"};
@@ -76,14 +74,19 @@ public class ParseTestORCCSV extends TestUtil {
             }
         }
 
-        for (int rowIndex = 0; rowIndex < 38; rowIndex++){
-            long valorc = (long) orc_frame.vec(0).at(rowIndex);
-            long valcsv = (long) csv_frame.vec(0).at(rowIndex);
-            DateTime orcDT = new DateTime(valorc);
-            DateTime csvDT = new DateTime(valcsv);
-            Log.info("orc time is "+orcDT.toString());
-            Log.info("csv time is "+csvDT.toString());
-            Log.info("Row index is "+rowIndex+". Orc value is "+valorc+".  Csv value is "+valcsv+". Difference is "+(valorc-valcsv));
+        if (f_index < 3) {
+            for (int colIndex = 0; colIndex < 2; colIndex++) {
+                for (int rowIndex = 0; rowIndex < 38; rowIndex++) {
+                    long valorc = (long) orc_frame.vec(colIndex).at8(rowIndex);
+                    long valcsv = (long) csv_frame.vec(colIndex).at8(rowIndex);
+                    DateTime orcDT = new DateTime(valorc);
+                    DateTime csvDT = new DateTime(valcsv);
+                    Log.info("orc time is " + orcDT.toString());
+                    Log.info("csv time is " + csvDT.toString());
+                    Log.info("Row index/Col index are " + rowIndex + "/" + colIndex + ". Orc value is " + valorc +
+                            ".  Csv value is " + valcsv + ". Difference is " + (valorc - valcsv));
+                }
+            }
         }
 
         assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-6));
@@ -91,4 +94,6 @@ public class ParseTestORCCSV extends TestUtil {
         csv_frame.delete();
         orc_frame.delete();
     }
+
+
 }

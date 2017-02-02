@@ -188,10 +188,16 @@ public class OrcParser extends Parser {
     long timestamp = (daysSinceEpoch*DAY_TO_MS+ADD_OFFSET);
     DateTime date = new DateTime(timestamp);
     int hour = date.hourOfDay().get();
+
     if (hour == 0)
+      return timestamp;
+    else
+      return (timestamp-hour*HOUR_OFFSET);
+
+/*    if (hour == 0)  // latest change
       return (timestamp-ADD_OFFSET);
     else
-      return (timestamp-hour*HOUR_OFFSET-ADD_OFFSET);
+      return (timestamp-hour*HOUR_OFFSET-ADD_OFFSET);*/
   }
 
   /**
@@ -214,7 +220,7 @@ public class OrcParser extends Parser {
         dout.addNumCol(cIdx, val, 0);
 
         if (timestamp)
-          Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[0]/1000000));
+          Log.info("Inside orc Parser for element "+rowIndex+" is "+val);
       }
     } else if(col.noNulls) {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
@@ -222,7 +228,7 @@ public class OrcParser extends Parser {
 
 
         if (timestamp )
-          Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[rowIndex]/1000000));
+          Log.info("Inside orc Parser for element "+rowIndex+" is "+ oneColumn[rowIndex] / 1000000 );
 
 
       }
@@ -235,7 +241,7 @@ public class OrcParser extends Parser {
           dout.addNumCol(cIdx, timestamp ? oneColumn[rowIndex] / 1000000 : correctDateTimeStamp(oneColumn[rowIndex]), 0);
 
           if (timestamp)
-            Log.info("Inside orc Parser for element "+rowIndex+" is "+(oneColumn[rowIndex]/1000000));
+            Log.info("Inside orc Parser for element "+rowIndex+" is "+ oneColumn[rowIndex] / 1000000 );
 
         }
       }
