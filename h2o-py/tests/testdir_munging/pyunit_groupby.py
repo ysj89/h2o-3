@@ -13,33 +13,61 @@ def group_by():
     # Connect to a pre-existing cluster
     
 
-    h2o_iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    h2o_iris2 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    pd_iris = pd.read_csv(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
+    h2o_iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"), na_strings=['NA'])
     na_handling = ["rm","all"]
-    col_names = h2o_iris.col_names[0:4]
 
     print("Running smoke test")
 
     # smoke test
     for na in na_handling:
-      grouped = h2o_iris.group_by("class")
- #     grouped2 = h2o_iris2.group_by("class")
-      grouped \
-        .count(na=na) \
-        .min(  na=na) \
-        .max(  na=na) \
-        .mean( na=na) \
-        .var(  na=na) \
-        .sd(   na=na) \
-        .ss(   na=na) \
-        .sum(  na=na)
+      print("Test group_by count....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na)
+      temp = grouped.get_frame()    # should get a frame 3 by 2
       print(grouped.get_frame())
-      # print("************************")
-      # grouped2.count(na=na).mean(na=na)
-      # print(grouped2.get_grame())
-      # sys.stdout.flush()
+
+      print("Test group_by count, min....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+
+      print("Test group_by count, min, max....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na).max(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+
+      print("Test group_by count, min, max, mean....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na).max(na=na).mean(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+      print("Test group_by count, min, max, mea, var....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na).max(na=na).mean(na=na).var(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+
+      print("Test group_by count, min, max, mea, var, sd....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na).max(na=na).mean(na=na).var(na=na).sd(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+
+      print("Test group_by count, min, max, mea, var, sd, ss....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na).max(na=na).mean(na=na).var(na=na).sd(na=na).ss(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+
+      print("Test group_by count, min, max, mea, var, sd, ss, sum....")
+      grouped = h2o_iris.group_by("class")  # setup the Groupby object
+      grouped.count(na=na).min(na=na).max(na=na).mean(na=na).var(na=na).sd(na=na).ss(na=na).sum(na=na)
+      temp = grouped.get_frame()
+      print(grouped.get_frame())
+
+      sys.stdout.flush()
 
 
 if __name__ == "__main__":
