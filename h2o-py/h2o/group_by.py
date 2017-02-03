@@ -106,7 +106,7 @@ class GroupBy(object):
 
     def get_frame(self):
         """The resulting frame of the group by."""
-        if not self._res:
+        if self._res is None:
             aggs = []
             for k in self._aggs: aggs += (self._aggs[k])
             self._res = h2o.H2OFrame._expr(expr=ExprNode("GB", self._fr, self._by, *aggs))
