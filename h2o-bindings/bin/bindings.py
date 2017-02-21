@@ -278,7 +278,7 @@ def endpoints(raw=False):
                 field = fields[0].copy()
                 schema = field["schema_name"] or ""   # {schema} is null for primitive types
                 ftype = field["type"]
-                assert ftype == "string" or ftype == "int" or schema.endswith("KeyV3") or schema == "ColSpecifierV3", \
+                assert ftype == "double" or ftype == "int[]" or ftype == "string" or ftype == "int" or schema.endswith("KeyV3") or schema == "ColSpecifierV3", \
                     "Unexpected param %s of type %s (schema %s)" % (field["name"], ftype, schema)
                 assert field["direction"] != "OUTPUT", "A path param %s cannot be of type OUTPUT" % field["name"]
                 field["is_path_param"] = True
