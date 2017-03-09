@@ -346,10 +346,13 @@ public class ArrayUtils {
     return res;
   }
 
-  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+  /*
+  with no memory allocation for results.  We assume the memory is already allocated.
+   */
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2, double[][] res) {
     if(ary1 == null || ary2 == null) return null;
-    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;   // Inner dimensions must match
-    double[][] res = new double[ary1.length][ary2[0].length];
+    // Inner dimensions must match
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;
 
     for(int i = 0; i < ary1.length; i++) {
       for(int j = 0; j < ary2[0].length; j++) {
@@ -360,6 +363,16 @@ public class ArrayUtils {
       }
     }
     return res;
+  }
+
+  /*
+  with memory allocation for results
+   */
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+    if(ary1 == null || ary2 == null) return null;
+    double[][] res = new double[ary1.length][ary2[0].length];
+
+    return multArrArr(ary1, ary2, res);
   }
 
   public static double[][] transpose(double[][] ary) {

@@ -758,6 +758,26 @@ public final class Gram extends Iced<Gram> {
     }
   }
 
+  /*
+  This method will not allocate the extra memory and hence is considered for lowMemory systems.
+   */
+  public void mul(double [] x, double [] res, boolean lowMemory){
+    if (lowMemory) {
+      int matSize = _xx.length;
+      for (int rowIndex = 0; rowIndex < matSize; rowIndex++) {
+        double d = 0;
+        for (int colIndex = 0; colIndex < rowIndex; colIndex++) {
+          d += _xx[rowIndex][colIndex] * x[colIndex];   // below diagonal
+        }
+        for (int colIndex = rowIndex; colIndex < matSize; colIndex++) {
+          d += _xx[colIndex][rowIndex] * x[colIndex];   // on and above diagonal
+        }
+        res[rowIndex] = d;
+      }
+    } else {
+      mul(x, res);  // call original implementation if preferred
+    }
+  }
 
   /**
    * Task to compute outer product of a matrix normalized by the number of observations (not counting rows with NAs).

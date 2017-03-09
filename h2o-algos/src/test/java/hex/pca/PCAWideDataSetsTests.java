@@ -33,8 +33,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		public void testWideDataSetsWithNAs() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
 				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+//				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
 		}
 
 		/*
@@ -46,8 +46,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		@Test public void testWideDataSets() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
 				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+//				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
 		}
 
 		/*
@@ -59,8 +59,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		@Test public void testWideDataSetsSmallDataNumeric() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
 				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+//				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
 		}
 
 		/*
@@ -72,8 +72,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		@Test public void testWideDataSetsSmallDataNumericNAs() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
 				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+//				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
 		}
 
 		/*
@@ -83,10 +83,10 @@ public class PCAWideDataSetsTests extends TestUtil {
 		categorical columns.  All pca methods are tested.
 		*/
 		@Test public void testWideDataSetsSmallData() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
+//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
 				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
 		}
 
 		/*
@@ -98,8 +98,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		@Test public void testWideDataSetsSmallDataNA() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
 				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+//				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
 		}
 }
 

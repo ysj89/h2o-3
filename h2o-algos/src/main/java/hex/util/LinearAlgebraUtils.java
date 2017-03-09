@@ -161,7 +161,7 @@ public class LinearAlgebraUtils {
     final int _ncolA;     // Number of cols in A
     final int _ncolExp;   // Number of cols in A with categoricals expanded
     final int _ncolQ;     // Number of cols in Q
-
+    public double[][] _vecs;  // 2-D array for right eigenvectors V, 1st index is vector number, 2nd index is A.nrows()
     public double[][] _atq;    // Output: A'Q is p_exp by k, where p_exp = number of cols in A with categoricals expanded
 
     public SMulTask(DataInfo ainfo, int ncolQ) {
@@ -178,17 +178,31 @@ public class LinearAlgebraUtils {
       _ncolQ = ncolQ;
     }
 
+    public SMulTask(DataInfo ainfo, int ncolQ, double[][] vecs) {
+      _ainfo = ainfo;
+      _ncolA = ainfo._adaptedFrame.numCols();
+      _ncolExp = numColsExp(ainfo._adaptedFrame,true);
+      _ncolQ = ncolQ;   // set to 0 if call from PCA for wide datasets
+      _vecs = vecs;     // when call from PCA
+    }
+
     @Override public void map(Chunk cs[]) {
       assert (_ncolA + _ncolQ) == cs.length;
-      _atq = new double[_ncolExp][_ncolQ];
+      boolean vecsNull = _vecs==null;
+      int numEigVec = vecsNull ? _ncolQ : _vecs.length;
+      _atq = new double[_ncolExp][numEigVec];
+      int kStart = vecsNull ? _ncolA : 0;
+      int kEnd = vecsNull ? _ncolA + _ncolQ : numEigVec;
 
-      for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
+
+      for (int k = kStart; k < kEnd; k++) {  // go through each column of Q
         // Categorical columns
         int cidx;
-        for(int p = 0; p < _ainfo._cats; p++) {
-          for(int row = 0; row < cs[0]._len; row++) {
-            if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
-            double q = cs[k].atd(row);
+        int outCol = vecsNull ? k - _ncolA : k;
+        for (int p = 0; p < _ainfo._cats; p++) {
+          for (int row = 0; row < cs[0]._len; row++) {
+            if (cs[p].isNA(row) && _ainfo._skipMissing) continue;
+            double q = vecsNull ? cs[k].atd(row) : _vecs[k][row];
             double a = cs[p].atd(row);
 
             if (Double.isNaN(a)) {
@@ -197,25 +211,28 @@ public class LinearAlgebraUtils {
               else if (!_ainfo._catMissing[p])
                 continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
               else
-                cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor
+                cidx = _ainfo._catOffsets[p + 1] - 1;     // Otherwise, missing value turns into extra (last) factor
             } else
-              cidx = _ainfo.getCategoricalId(p, (int)a);
-            if(cidx >= 0) _atq[cidx][k-_ncolA] += q;   // Ignore categorical levels outside domain
+              cidx = _ainfo.getCategoricalId(p, (int) a);
+            if (cidx >= 0) {
+              _atq[cidx][outCol] += q;   // Ignore categorical levels outside domain
+            }
           }
         }
 
         // Numeric columns
         int pnum = 0;
         int pexp = _ainfo.numStart();
-        for(int p = _ainfo._cats; p < _ncolA; p++) {
-          for(int row = 0; row  < cs[0]._len; row++) {
-            if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
-            double q = cs[k].atd(row);
+        for (int p = _ainfo._cats; p < _ncolA; p++) {
+          for (int row = 0; row < cs[0]._len; row++) {
+            if (cs[p].isNA(row) && _ainfo._skipMissing) continue;
+            double q = vecsNull ? cs[k].atd(row) : _vecs[k][row];
             double a = cs[p].atd(row);
             a = modifyNumeric(a, pnum, _ainfo);
-            _atq[pexp][k-_ncolA] += q * a;
+            _atq[pexp][outCol] += q * a;
           }
-          pexp++; pnum++;
+          pexp++;
+          pnum++;
         }
         assert pexp == _atq.length;
       }
@@ -225,6 +242,7 @@ public class LinearAlgebraUtils {
       ArrayUtils.add(_atq, other._atq);
     }
   }
+
 
   /**
    * Get R = L' from Cholesky decomposition Y'Y = LL' (same as R from Y = QR)

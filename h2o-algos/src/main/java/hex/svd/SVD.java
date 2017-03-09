@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import static hex.util.DimensionReductionUtils.createScoringHistoryTableDR;
+import static water.util.ArrayUtils.*;
 
 /**
  * Singular Value Decomposition
@@ -139,8 +140,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     SVDModel _model;
 
     // private double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
-    private double[] powerLoop(Gram gram, long seed, SVDModel model, double[] randomInitialV, double[] finalV)
-    { randomInitialV = ArrayUtils.gaussianVector(seed, randomInitialV);
+    private double[] powerLoop(Gram gram, long seed, SVDModel model, double[] randomInitialV, double[] finalV, int k)
+    {
+//      Arrays.fill(randomInitialV,0);
+      randomInitialV = ArrayUtils.gaussianVector(seed+k, randomInitialV); // random vector for each iteration!
       return powerLoop(gram, randomInitialV, model, finalV);
     }
     private double[] powerLoop(Gram gram, double[] v, SVDModel model, double[] vnew) {
@@ -158,8 +161,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
       while(iters < _parms._max_iterations && err > TOLERANCE) {
         // Compute x_i <- A'Av_{i-1} and ||x_i||
-        gram.mul(v, vnew);
-        double norm = ArrayUtils.l2norm(vnew);
+        gram.mul(v, vnew, true);
+        double norm = l2norm(vnew);
 
         double diff; err = 0;
         for (int i = 0; i < v.length; i++) {
@@ -374,11 +377,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       try {
         init(true);   // Initialize parameters
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+        boolean trainHasNas = _train.hasNAs();
 
         // The model to be built
         model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
         model.delete_and_lock(_job);
 
+        // store (possibly) rebalanced input train to pass it to nested SVD job
+        Frame tranRebalanced = new Frame(_train);
         // 0) Transform training data and save standardization vectors for use in scoring later
         if (!_parms._impute_missing) {    // added warning to user per request from Nidhi
           _job.warn("_train: Dataset used may contain fewer number of rows due to removal of rows with " +
@@ -386,16 +392,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
                   "TRUE/True/true/... depending on the client language.");
         }
 
-        if (_wideDataset && (!_parms._impute_missing) && _train.hasNAs()) { // remove NAs rows
+        if (_wideDataset && (!_parms._impute_missing) && trainHasNas) { // remove NAs rows
           tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
                   DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
                   _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                     /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(tinfo._key, tinfo);
 
-          DKV.put(_train._key, _train);
-          _train = Rapids.exec(String.format("(na.omit %s)", _train._key)).getFrame(); // remove NA rows
-          DKV.remove(_train._key);
+          DKV.put(tranRebalanced._key, tranRebalanced);
+          _train = Rapids.exec(String.format("(na.omit %s)", tranRebalanced._key)).getFrame(); // remove NA rows
+          DKV.remove(tranRebalanced._key);
         }
         dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
                 DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
@@ -403,6 +409,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
                 /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
+        if (_wideDataset && !_parms._impute_missing && trainHasNas) {
+          // fixed the std and mean of dinfo to that of the frame before removing NA rows
+          dinfo._normMul = tinfo._normMul;
+          dinfo._numMeans = tinfo._numMeans;
+          dinfo._normSub = tinfo._normSub;
+        }
         // Save adapted frame info for scoring later
         setSVDModel(model, dinfo);
 
@@ -461,10 +473,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           _job.update(1, "Begin distributed calculation of Gram matrix");
           GramTask gtsk = null;
           Gram.OuterGramTask ogtsk = null;
-          Gram gram = null;
+          Gram gram = null, gram_update=null;
           double[] randomInitialV = null; // store random initial eigenvectors, actually refering to V'
           double[] finalV = null;         // store eigenvectors obtained from powerLoop
           int eigVecLen = _ncolExp;       // size of one eigenvector
+          GramUpdate guptsk = null;
+          double[][] gramArrays = null;       // store outergram as a double array
+          double[][] gramUpdatesW = null;     // store the result of (I-sum vi*T(vi))*A*T(A)*(I-sum vi*T(vi))
+          double[][] uVecsWide = null;    // store transformed eignvector in the end for wide datasetz
 
           if (_wideDataset) {
             ogtsk = new Gram.OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
@@ -487,7 +503,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._v = new double[_parms._nv][eigVecLen];  // Store V' for ease of use and transpose back at end
           randomInitialV = new double[eigVecLen];   // allocate memroy for randomInitialV and finalV once, save time
           finalV = new double[eigVecLen];
-          model._output._v[0] = Arrays.copyOf(powerLoop(gram, _parms._seed, model, randomInitialV, finalV), eigVecLen);
+          model._output._v[0] = Arrays.copyOf(powerLoop(gram, _parms._seed, model, randomInitialV, finalV, 0), eigVecLen);
 
           // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
           double[][] ivv_sum = new double[eigVecLen][eigVecLen];
@@ -496,9 +512,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
           if (!_parms._only_v) {
             model._output._d = new double[_parms._nv];
-            model._output._u_key = Key.make(u_name);
-            uvecs = new Vec[_parms._nv];
-            computeSigmaU(dinfo, model, 0, ivv_sum, uvecs, finalV);  // Compute first singular value \sigma_1
+
+            if (!_wideDataset) {
+              model._output._u_key = Key.make(u_name);
+              uvecs = new Vec[_parms._nv];
+              computeSigmaU(dinfo, model, 0, ivv_sum, uvecs, finalV);  // Compute first singular value \sigma_1
+            }
           }
           model._output._iterations = 1;
           model.update(_job); // Update model in K/V store
@@ -506,43 +525,69 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
           updateIVVSum(ivv_sum, model._output._v[0]);
           // double[][] gram_update = ArrayUtils.multArrArr(ArrayUtils.multArrArr(ivv_sum, gram), ivv_sum);
-          GramUpdate guptsk = new GramUpdate(_job._key, dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
-          Gram gram_update = guptsk._gram;
+
+          if (_wideDataset) {
+            gramArrays = new double[eigVecLen][eigVecLen];    // memory allocation is done once here
+            gramUpdatesW = new double[eigVecLen][eigVecLen];
+            gram_update = new Gram(eigVecLen, 0, dinfo.numNums(), dinfo._cats,false);
+
+            updateGram(ivv_sum, gramArrays, gramUpdatesW, gram, gram_update);
+          } else {
+            guptsk = new GramUpdate(_job._key, dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
+            gram_update = guptsk._gram;
+          }
 
           for (int k = 1; k < _parms._nv; k++) {  // loop through for each eigenvalue/eigenvector...
             if (stop_requested()) break;
             _job.update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
-            model._output._v[k] = Arrays.copyOf(powerLoop(gram_update, _parms._seed, model, randomInitialV, finalV),
-                    _ncolExp);
+            model._output._v[k] = Arrays.copyOf(powerLoop(gram_update, _parms._seed, model, randomInitialV, finalV, k),
+                    eigVecLen);
 
             // 3) Residual data A_k = A - \sum_{i=1}^k \sigma_i u_iv_i' = A - \sum_{i=1}^k Av_iv_i' = A(I - \sum_{i=1}^k v_iv_i')
             // 3a) Compute \sigma_k = ||A_{k-1}v_k|| and u_k = A_{k-1}v_k/\sigma_k
-            if (!_parms._only_v)
+            if (!_parms._only_v && !_wideDataset)
               computeSigmaU(dinfo, model, k, ivv_sum, uvecs, finalV);
 
             // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
             updateIVVSum(ivv_sum, model._output._v[k]);   // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
             // gram_update = ArrayUtils.multArrArr(ivv_sum, ArrayUtils.multArrArr(gram, ivv_sum));  // Too slow on wide arrays
-            guptsk = new GramUpdate(_job._key, dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
-            gram_update = guptsk._gram;
+            if (_wideDataset) {
+              updateGram(ivv_sum, gramArrays, gramUpdatesW, gram, gram_update);
+            } else {
+              guptsk = new GramUpdate(_job._key, dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
+              gram_update = guptsk._gram;
+            }
             model._output._iterations++;
             model.update(_job); // Update model in K/V store
+          }     // end iteration to find eigenvectors
+
+          if (!_parms._only_v && !_parms._keep_u && _wideDataset) {  // dealing with wide dataset per request from PCA, won't want U
+            SMulTask stsk = new SMulTask(dinfo, 0, model._output._v).doAll(dinfo._adaptedFrame);
+            uVecsWide = ArrayUtils.transpose(stsk._atq); // memory allocation.
+            double[] toScale = new double[_parms._nv];
+            for (int kInd = 0; kInd <  _parms._nv; kInd++) {
+              model._output._d[kInd] = l2norm(uVecsWide[kInd]);
+              toScale[kInd] = 1.0/model._output._d[kInd];
+            }
+            model._output._v = ArrayUtils.transpose(mult(uVecsWide, toScale));
           }
 
-          // 4) Normalize output frame columns by singular values to get left singular vectors
-          model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
-
-          if (!_parms._only_v && !_parms._keep_u) {          // Delete U vecs if computed, but user does not want it returned
-            for( Vec uvec : uvecs ) uvec.remove();
-            model._output._u_key = null;
-          } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
-            u = new Frame(model._output._u_key, null, uvecs);
-            DKV.put(u._key, u);
-            DivideU utsk = new DivideU(model._output._d);
-            utsk.doAll(u);
+          if (!_wideDataset) {
+            // 4) Normalize output frame columns by singular values to get left singular vectors
+            model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
+            if (!_parms._only_v && !_parms._keep_u) {         // Delete U vecs if computed, but user does not want it returned
+              for (Vec uvec : uvecs) uvec.remove();
+              model._output._u_key = null;
+            } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
+              u = new Frame(model._output._u_key, null, uvecs);
+              DKV.put(u._key, u);
+              DivideU utsk = new DivideU(model._output._d);
+              utsk.doAll(u);
+            }
           }
+
           LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           scoreTable.put("err", model._output._history_err);
@@ -581,12 +626,45 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         List<Key<Vec>> keep = new ArrayList<>();
         if (model._output!=null) {
-          Frame uFrm = DKV.getGet(model._output._u_key);
-          if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
+          if (model._output._u_key != null) {
+            Frame uFrm = DKV.getGet(model._output._u_key);
+            if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
+          }
           Frame vFrm = DKV.getGet(model._output._v_key);
           if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
         }
         Scope.untrack(keep);
+      }
+    }
+  }
+
+  /*
+  This method will calculate (I-v1*T(v1))*A*T(A)*(I-v1*T(v1)).  Note that we already have
+  A*T(A) part as a gram matrix.  The ivv_sum part provides the (I-v1*T(v1)).  All we need to
+  do here is to get the product and put it into a brand new gram matrix.
+   */
+  private void updateGram(double[][] ivv_sum, double[][] gramToArray, double[][] resultGram, Gram gram, Gram gramUpdate)
+  {
+    int numRows = gram.fullN();
+
+    // grab gram matrix (A*T(A)) and expand into full matrix represented as 2D double array.
+    for (int row_index=0; row_index < numRows; row_index++) {
+      for (int col_index=0; col_index < numRows; col_index++) {
+        if (col_index <= row_index) {
+          gramToArray[row_index][col_index] = gram._xx[row_index][col_index];
+        } else {
+          gramToArray[row_index][col_index] = gram._xx[col_index][row_index];
+        }
+      }
+    }
+
+    resultGram = multArrArr(ivv_sum, gramToArray);    // resultGram = (I-v1*T(v1))*A*T(A)
+    gramToArray = multArrArr(resultGram, ivv_sum);    // overwrite gramToArray with final result resultGram*(I-v1*T(v1))
+
+    // copy over results from matrix multiplication output to resultGram
+    for (int row_index = 0; row_index < numRows; row_index++) {
+      for (int col_index = 0; col_index <= row_index; col_index++) {
+        gramUpdate._xx[row_index][col_index] = gramToArray[row_index][col_index];
       }
     }
   }
