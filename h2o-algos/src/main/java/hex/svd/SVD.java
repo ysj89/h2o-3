@@ -23,7 +23,6 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
@@ -164,8 +163,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       while(iters < _parms._max_iterations && err > TOLERANCE) {
         // Compute x_i <- A'Av_{i-1} and ||x_i||
 
-        // debugging
-        double[] testV = new double[v.length];
+        /////// debugging, will delete this part after talking to Tomas about this.
+/*        double[] testV = new double[v.length];
         double[] testV2 = new double[v.length];
         gram.mul(v, testV);
         gram.mul(v, testV2, true);
@@ -184,7 +183,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             e.printStackTrace();
           }
           Log.info("l2norm difference between two gram multiplication is " + diffg);
-        }
+        }*/
+        //////// END DEBUGGING
 
         gram.mul(v, vnew, true);
         double norm = l2norm(vnew);

@@ -231,10 +231,8 @@ public class PCATest extends TestUtil {
 
   @Test public void testGramMul() {
     Scope.enter();
-
     Frame gramInputOoldONew = parse_test_file(Key.make("checkGram.hex"), "smalldata/pca_test/GramTestData2.csv.zip");
     Scope.track(gramInputOoldONew);
-
     int gramSize = (int) gramInputOoldONew.numRows();
     double[][] dataGram = new double[gramSize][gramSize];
     double[] input = new double[gramSize];
@@ -243,23 +241,23 @@ public class PCATest extends TestUtil {
     double[] gramOutputNew = new double[gramSize];
     double[] gramOutputOldS = new double[gramSize];
     double[] gramOutputNewS = new double[gramSize];
-    Gram gram = new Gram(gramSize, 0, gramSize,0, false);
+    Gram gram = new Gram(gramSize, 0, gramSize, 0, false);  // need to get the categorical columns in here
 
-    for (int colIndex = 0; colIndex < gramSize; colIndex++) {
+    for (int colIndex = 0; colIndex < gramSize; colIndex++) {   // go through each column
       input[colIndex] = gramInputOoldONew.vec(380).at(colIndex);
-      gramOutputOldS[colIndex] = gramInputOoldONew.vec(382).at(colIndex);
-      gramOutputNewS[colIndex] = gramInputOoldONew.vec(381).at(colIndex);
+      gramOutputOldS[colIndex] = gramInputOoldONew.vec(381).at(colIndex);
+      gramOutputNewS[colIndex] = gramInputOoldONew.vec(382).at(colIndex);
       for (int rowIndex=0; rowIndex < gramSize; rowIndex++) {
         dataGram[rowIndex][colIndex] = gramInputOoldONew.vec(colIndex).at(rowIndex);
 
         if (colIndex <= rowIndex) {
-          gram._xx[rowIndex][colIndex] = gramInputOoldONew.vec(colIndex).at(rowIndex);
+          gram._xx[rowIndex][colIndex] = dataGram[rowIndex][colIndex];
         }
       }
     }
 
     gram.mul(input, gramOutputOld);
-    gram.mul(input, gramOutputNew);
+    gram.mul(input, gramOutputNew, true);
     corr_output = mmul(dataGram, input);
 
     Frame gramOutOld = new water.util.ArrayUtils().frame(gramOutputOld);
