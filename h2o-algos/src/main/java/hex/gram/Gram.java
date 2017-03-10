@@ -760,17 +760,25 @@ public final class Gram extends Iced<Gram> {
 
   /*
   This method will not allocate the extra memory and hence is considered for lowMemory systems.
+  However, need to consider case when you have categoricals!  Make them part of the matrix
+  in the multiplication process.
    */
-  public void mul(double [] x, double [] res, boolean lowMemory){
-    if (lowMemory) {
-      int matSize = _xx.length;
-      for (int rowIndex = 0; rowIndex < matSize; rowIndex++) {
+  public void mul(double [] x, double [] res, boolean saveMemory){
+    if (saveMemory) {
+      int colSize = fullN();        // actual gram matrix size
+      int offsetForCat = colSize-_xx.length; // offset for categorical columns
+
+      for (int rowIndex = 0; rowIndex < colSize; rowIndex++) {
         double d = 0;
-        for (int colIndex = 0; colIndex < rowIndex; colIndex++) {
-          d += _xx[rowIndex][colIndex] * x[colIndex];   // below diagonal
+        for (int colIndex = 0; colIndex < rowIndex; colIndex++) {   // below diagonal
+          d += rowIndex>=offsetForCat?_xx[rowIndex-offsetForCat][colIndex] * x[colIndex]:0.0;
         }
-        for (int colIndex = rowIndex; colIndex < matSize; colIndex++) {
-          d += _xx[colIndex][rowIndex] * x[colIndex];   // on and above diagonal
+        // on diagonal
+        d+= (rowIndex>=offsetForCat)?_xx[rowIndex-offsetForCat][rowIndex]*x[rowIndex]:_diag[rowIndex]*x[rowIndex];
+
+        for (int colIndex = rowIndex+1; colIndex < colSize; colIndex++) {   // above diagonal
+          d += (rowIndex<offsetForCat)?((colIndex<offsetForCat)?0:_xx[colIndex-offsetForCat][rowIndex]*x[colIndex]):
+                  _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
         }
         res[rowIndex] = d;
       }

@@ -12,14 +12,18 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.*;
+import water.util.FileUtils;
+import water.util.Log;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -86,6 +90,23 @@ public class TestUtil extends Iced {
     // Finalize registration of REST API to enable tests which are touching Schemas.
     H2O.finalizeRegistration();
   }
+
+  /*
+  My feeble attempt to save a H2OFrame built in java to csv file
+
+   */
+  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean headers, boolean hex_string)
+          throws IOException {
+    InputStream frameToStream = h2oframe.toCSV(headers, hex_string);    // read in frame as Inputstream
+    byte[] buffer = new byte[frameToStream.available()];
+    frameToStream.read(buffer);
+
+    // write Inputstream to a real file
+    File targetFile = new File(fileNameWithPath);
+    OutputStream outStream = new FileOutputStream(targetFile);
+    outStream.write(buffer);
+  }
+
 
   @AfterClass
   public static void checkLeakedKeys() {

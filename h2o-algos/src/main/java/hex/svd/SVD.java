@@ -23,9 +23,11 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -161,6 +163,29 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
       while(iters < _parms._max_iterations && err > TOLERANCE) {
         // Compute x_i <- A'Av_{i-1} and ||x_i||
+
+        // debugging
+        double[] testV = new double[v.length];
+        double[] testV2 = new double[v.length];
+        gram.mul(v, testV);
+        gram.mul(v, testV2, true);
+        double diffg = l2norm(add(testV2, mult(testV, -1)));
+        if (diffg > 0.061) {
+          gram.mul(v, testV);
+          gram.mul(v, testV2, true);
+          Frame eigFrame = new water.util.ArrayUtils().frame(gram.getXX()); // write gram as a frame
+          double[][] inputOldNew = {v, testV, testV2};
+          eigFrame.add(new water.util.ArrayUtils().frame(transpose(inputOldNew)));
+
+          String currDir = System.getProperty("user.dir");
+          try {
+            writeFrameToCSV(currDir+"dataResult.csv", eigFrame, false, false);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          Log.info("l2norm difference between two gram multiplication is " + diffg);
+        }
+
         gram.mul(v, vnew, true);
         double norm = l2norm(vnew);
 
@@ -193,6 +218,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       return model._output._d[k];
     }
 
+    public void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean headers, boolean hex_string)
+            throws IOException {
+      InputStream frameToStream = h2oframe.toCSV(headers, hex_string);    // read in frame as Inputstream
+      byte[] buffer = new byte[frameToStream.available()];
+      frameToStream.read(buffer);
+
+      // write Inputstream to a real file
+      File targetFile = new File(fileNameWithPath);
+      OutputStream outStream = new FileOutputStream(targetFile);
+      outStream.write(buffer);
+    }
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame randSubIterInPlace(DataInfo dinfo, SVDModel model) {
       DataInfo yinfo = null;
