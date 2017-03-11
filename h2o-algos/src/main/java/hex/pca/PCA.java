@@ -73,7 +73,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
     }
-    if (mem_usage > mem_usage_w) {  // choose the most memory efficient one
+    if (mem_usage > max_mem) {  // choose the most memory efficient one
       _wideDataset = true;   // set to true if wide dataset is detected
     }
   }
@@ -361,6 +361,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._nv = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
+          parms._impute_missing = _parms._impute_missing;
 
           // Set method for computing SVD accordingly
           if(_parms._pca_method == PCAParameters.Method.Power) {
@@ -401,6 +402,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
+
           parms._recover_svd = true;
 
           parms._loss = GlrmLoss.Quadratic;

@@ -6,13 +6,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.Scope;
 
 import java.util.concurrent.ExecutionException;
 
-import static hex.pca.PCAWideDataSetsTests.TOLERANCE;
 import static water.TestUtil.parse_test_file;
 
 /**
@@ -31,10 +30,10 @@ public class PCAWideDataSetsTests extends TestUtil {
 		*/
 		@Test
 		public void testWideDataSetsWithNAs() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
-				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-//				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-//				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GramSVD, TOLERANCE);	// pca_method=GramSVD
+				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Power, TOLERANCE);	// pca_method=Power
+//				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.Randomized, TOLERANCE);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsWithNAs(PCAModel.PCAParameters.Method.GLRM, TOLERANCE);	// pca_method=GLRM
 		}
 
 		/*
@@ -45,9 +44,9 @@ public class PCAWideDataSetsTests extends TestUtil {
 		*/
 		@Test public void testWideDataSets() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, TOLERANCE);	// pca_method=GramSVD
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, 3*TOLERANCE);	// pca_method=Power
-//				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-//				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, TOLERANCE);	// pca_method=Power
+//				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, TOLERANCE);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM, TOLERANCE);	// pca_method=GLRM
 		}
 
 		/*
@@ -57,10 +56,10 @@ public class PCAWideDataSetsTests extends TestUtil {
 		have numerical columns and no categorical columns.  All pca methods are tested.
 		*/
 		@Test public void testWideDataSetsSmallDataNumeric() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
-				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-//				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-//				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GramSVD, TOLERANCE);	// pca_method=GramSVD
+				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Power, TOLERANCE);	// pca_method=Power
+//				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.Randomized, TOLERANCE);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method.GLRM, TOLERANCE);	// pca_method=GLRM
 		}
 
 		/*
@@ -70,10 +69,10 @@ public class PCAWideDataSetsTests extends TestUtil {
 		have numerical columns and no categorical columns.  All pca methods are tested.
 		*/
 		@Test public void testWideDataSetsSmallDataNumericNAs() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
-				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-//				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-//				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GramSVD, TOLERANCE);	// pca_method=GramSVD
+				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Power, TOLERANCE);	// pca_method=Power
+//				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.Randomized, TOLERANCE);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method.GLRM, TOLERANCE);	// pca_method=GLRM
 		}
 
 		/*
@@ -83,10 +82,10 @@ public class PCAWideDataSetsTests extends TestUtil {
 		categorical columns.  All pca methods are tested.
 		*/
 		@Test public void testWideDataSetsSmallData() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
-				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GramSVD, TOLERANCE);	// pca_method=GramSVD
+				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Power, TOLERANCE);	// pca_method=Power
+//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.Randomized, TOLERANCE);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallData(PCAModel.PCAParameters.Method.GLRM, TOLERANCE);	// pca_method=GLRM
 		}
 
 		/*
@@ -96,10 +95,10 @@ public class PCAWideDataSetsTests extends TestUtil {
 		categorical columns.  All pca methods are tested.
 		*/
 		@Test public void testWideDataSetsSmallDataNA() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GramSVD);	// pca_method=GramSVD
-				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Power);	// pca_method=Power
-//				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Randomized);	// pca_method=Randomized
-//				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GLRM);	// pca_method=GLRM
+				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GramSVD, TOLERANCE);	// pca_method=GramSVD
+				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Power, TOLERANCE);	// pca_method=Power
+//				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.Randomized, TOLERANCE);	// pca_method=Randomized
+//				ActualPCATests.testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method.GLRM, TOLERANCE);	// pca_method=GLRM
 		}
 }
 
@@ -107,7 +106,7 @@ public class PCAWideDataSetsTests extends TestUtil {
   This class performs the actual PCA tests.
  */
 class ActualPCATests {
-		public static void testWideDataSetsWithNAs(PCAModel.PCAParameters.Method pcaMethod)
+		public static void testWideDataSetsWithNAs(PCAModel.PCAParameters.Method pcaMethod, double tolerance)
 										throws InterruptedException, ExecutionException {
 				Scope.enter();
 				PCAModel modelN = null;     // store PCA models generated with original implementation
@@ -122,7 +121,7 @@ class ActualPCATests {
 						DKV.put(train);
 						PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
 						parms._train = train._key;
-						parms._k = 5;
+						parms._k = 7;
 						parms._transform = DataInfo.TransformType.STANDARDIZE;
 						parms._use_all_factor_levels = true;
 						parms._pca_method = pcaMethod;
@@ -144,13 +143,13 @@ class ActualPCATests {
 
 						// check to make sure eigenvalues and eigenvectors are the same
 						// compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
-						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, TOLERANCE);
-						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, TOLERANCE);
-						TestUtil.checkProjection(scoreW, scoreN, TOLERANCE, flippedEig);
+						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, tolerance);
+						TestUtil.checkProjection(scoreW, scoreN, tolerance, flippedEig);
 						// Build a POJO, check results with original PCA
-						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,TOLERANCE));
+						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,tolerance));
 						// Build a POJO, check results with wide dataset PCA
-						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,TOLERANCE));
+						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,tolerance));
 				} finally {
 						Scope.exit();
 				}
@@ -201,7 +200,7 @@ class ActualPCATests {
 				}
 		}
 
-		public static void testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method pcaMethod)
+		public static void testWideDataSetsSmallDataNumeric(PCAModel.PCAParameters.Method pcaMethod, double tolerance)
 										throws InterruptedException, ExecutionException {
 				Scope.enter();
 				PCAModel modelN = null;     // store PCA models generated with original implementation
@@ -237,19 +236,19 @@ class ActualPCATests {
 						Scope.track_generic(modelW);
 
 						// compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
-						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, TOLERANCE);
-						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, TOLERANCE);
-						TestUtil.checkProjection(scoreW, scoreN, TOLERANCE, flippedEig);
+						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, tolerance);
+						TestUtil.checkProjection(scoreW, scoreN, tolerance, flippedEig);
 						// Build a POJO, check results with original PCA
-						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,TOLERANCE));
+						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,tolerance));
 						// Build a POJO, check results with wide dataset PCA
-						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,TOLERANCE));
+						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,tolerance));
 				} finally {
 						Scope.exit();
 				}
 		}
 
-		public static void testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method pcaMethod)
+		public static void testWideDataSetsSmallDataNumericNAs(PCAModel.PCAParameters.Method pcaMethod, double tolerance)
 										throws InterruptedException, ExecutionException {
 				Scope.enter();
 				PCAModel modelN = null;     // store PCA models generated with original implementation
@@ -291,19 +290,19 @@ class ActualPCATests {
 						Scope.track_generic(modelW);
 
 						// compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
-						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, TOLERANCE);
-						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, TOLERANCE);
-						TestUtil.checkProjection(scoreW, scoreN, TOLERANCE, flippedEig);
+						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, tolerance);
+						TestUtil.checkProjection(scoreW, scoreN, tolerance, flippedEig);
 						// Build a POJO, check results with original PCA
-						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,TOLERANCE));
+						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,tolerance));
 						// Build a POJO, check results with wide dataset PCA
-						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,TOLERANCE));
+						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,tolerance));
 				} finally {
 						Scope.exit();
 				}
 		}
 
-		public static void testWideDataSetsSmallData(PCAModel.PCAParameters.Method pcaMethod)
+		public static void testWideDataSetsSmallData(PCAModel.PCAParameters.Method pcaMethod, double tolerance)
 										throws InterruptedException, ExecutionException {
 				Scope.enter();
 				PCAModel modelN = null;     // store PCA models generated with original implementation
@@ -335,19 +334,19 @@ class ActualPCATests {
 						Scope.track_generic(modelW);
 
 						// compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
-						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, TOLERANCE);
-						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, TOLERANCE);
-						TestUtil.checkProjection(scoreW, scoreN, TOLERANCE, flippedEig);
+						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, tolerance);
+						TestUtil.checkProjection(scoreW, scoreN, tolerance, flippedEig);
 						// Build a POJO, check results with original PCA
-						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,TOLERANCE));
+						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,tolerance));
 						// Build a POJO, check results with wide dataset PCA
-						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,TOLERANCE));
+						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,tolerance));
 				} finally {
 						Scope.exit();
 				}
 		}
 
-		public static void testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method pcaMethod)
+		public static void testWideDataSetsSmallDataNA(PCAModel.PCAParameters.Method pcaMethod, double tolerance)
 										throws InterruptedException, ExecutionException {
 				Scope.enter();
 				PCAModel modelN = null;     // store PCA models generated with original implementation
@@ -385,13 +384,13 @@ class ActualPCATests {
 						Scope.track_generic(modelW);
 
 						// compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
-						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, TOLERANCE);
-						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, TOLERANCE);
-						TestUtil.checkProjection(scoreW, scoreN, TOLERANCE, flippedEig);
+						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+						boolean[] flippedEig = TestUtil.checkEigvec( modelW._output._eigenvectors, modelN._output._eigenvectors, tolerance);
+						TestUtil.checkProjection(scoreW, scoreN, tolerance, flippedEig);
 						// Build a POJO, check results with original PCA
-						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,TOLERANCE));
+						Assert.assertTrue(modelN.testJavaScoring(train,scoreN,tolerance));
 						// Build a POJO, check results with wide dataset PCA
-						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,TOLERANCE));
+						Assert.assertTrue(modelW.testJavaScoring(train,scoreW,tolerance));
 				} finally {
 						Scope.exit();
 				}

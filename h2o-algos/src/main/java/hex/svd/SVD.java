@@ -44,7 +44,7 @@ import static water.util.ArrayUtils.*;
  */
 public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of right singular vector
+  private final double TOLERANCE = 1e-15;    // Cutoff for estimation error of right singular vector
 
   // Maximum number of columns when categoricals expanded
   private final int MAX_COLS_EXPANDED = 5000;
@@ -145,6 +145,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     {
 //      Arrays.fill(randomInitialV,0);
       randomInitialV = ArrayUtils.gaussianVector(seed+k, randomInitialV); // random vector for each iteration!
+      div(randomInitialV, l2norm(randomInitialV));  // normalize initial vector
       return powerLoop(gram, randomInitialV, model, finalV);
     }
     private double[] powerLoop(Gram gram, double[] v, SVDModel model, double[] vnew) {
@@ -183,9 +184,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             e.printStackTrace();
           }
           Log.info("l2norm difference between two gram multiplication is " + diffg);
-        }*/
+        } */
         //////// END DEBUGGING
-
         gram.mul(v, vnew, true);
         double norm = l2norm(vnew);
 
@@ -413,7 +413,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       try {
         init(true);   // Initialize parameters
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
-        boolean trainHasNas = _train.hasNAs();
 
         // The model to be built
         model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
@@ -421,6 +420,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // store (possibly) rebalanced input train to pass it to nested SVD job
         Frame tranRebalanced = new Frame(_train);
+        boolean frameHasNas = tranRebalanced.hasNAs();
         // 0) Transform training data and save standardization vectors for use in scoring later
         if (!_parms._impute_missing) {    // added warning to user per request from Nidhi
           _job.warn("_train: Dataset used may contain fewer number of rows due to removal of rows with " +
@@ -428,7 +428,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
                   "TRUE/True/true/... depending on the client language.");
         }
 
-        if (_wideDataset && (!_parms._impute_missing) && trainHasNas) { // remove NAs rows
+        if (_wideDataset && (!_parms._impute_missing) && frameHasNas) { // remove NAs rows
           tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
                   DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
                   _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
@@ -445,7 +445,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
                 /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
-        if (_wideDataset && !_parms._impute_missing && trainHasNas) {
+        if (_wideDataset && !_parms._impute_missing && frameHasNas) {
           // fixed the std and mean of dinfo to that of the frame before removing NA rows
           dinfo._normMul = tinfo._normMul;
           dinfo._numMeans = tinfo._numMeans;
@@ -522,7 +522,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             ogtsk = new Gram.OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
             gram = ogtsk._gram;
             model._output._nobs = ogtsk._nobs;
-            eigVecLen = (int) ogtsk._nobs;
+            eigVecLen = (int) gram.fullN();
           } else {
             gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
             gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
