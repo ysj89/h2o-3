@@ -8,6 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -103,8 +104,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     if (expensive && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO){
       _parms._categorical_encoding=Model.Parameters.CategoricalEncodingScheme.Eigen;
     }
-    if (_parms._radius_scale <= 0) {
-      error("_radius_scale", "radius_scale must be > 0.");
+    if (_parms._max_exemplars <= 0) {
+      error("_max_exemplars", "max_exemplars must be > 0.");
     }
     super.init(expensive);
     if (expensive) {
@@ -140,14 +141,58 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         _job.update(1,"Preprocessing data.");
         di = new DataInfo(orig, null, true, _parms._transform, false, false, false);
         DKV.put(di);
-        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // mostly always going to be ~ (_radius_scale * 0.09)
+        Vec assignment;
+        AggregateTask aggTask;
+        final double radiusBase = .1 / Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // Lee's magic formula
+        final int maxExemplars = (int)Math.min((long)_parms._max_exemplars, orig.numRows());
 
-        // Add workspace vector for exemplar assignment
-        Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-        Vec assignment = vecs[vecs.length-1] = orig.anyVec().makeZero();
+        // Increase radius until we have low enough number of exemplars
+        _job.update(0, "Aggregating.");
+        int numExemplars;
+        double lo = -10;
+        double hi = 10;
+        while(true) {
+          double mid = lo + (hi-lo)/2.;
+          Log.info("log2(radius) lo/mid/hi: " + lo + "/" + mid + "/" + hi);
+          double radius = Math.pow(2, mid) * radiusBase;
+          if (maxExemplars==orig.numRows()) radius = 0;
 
-        _job.update(1, "Aggregating.");
-        AggregateTask aggTask = new AggregateTask(di._key, radius, _job._key).doAll(vecs);
+          // Add workspace vector for exemplar assignment
+          Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length + 1);
+          assignment = vecs[vecs.length - 1] = orig.anyVec().makeZero();
+          Log.info("Aggregating with radius " + String.format("%5f", radius) + ":");
+          aggTask = new AggregateTask(di._key, radius, _job._key, maxExemplars).doAll(vecs);
+
+          if (radius == 0) {
+            Log.info(" Returning original dataset.");
+            numExemplars = aggTask._exemplars.length;
+            assert(numExemplars == orig.numRows());
+            break;
+          }
+
+          if (Math.abs(hi-lo) < 1e-3 * Math.abs(lo+hi)) { // nothing else to try
+            aggTask = new AggregateTask(di._key, radius, _job._key, (int)orig.numRows()).doAll(vecs);
+            Log.info(" Running again without early cutout.");
+            numExemplars = aggTask._exemplars.length;
+            break;
+          }
+
+          if (aggTask._aborted || aggTask._exemplars.length > maxExemplars) {
+            Log.info(" Too many exemplars.");
+            lo = mid;
+          } else {
+            numExemplars = aggTask._exemplars.length;
+            Log.info(" " + numExemplars + " exemplars.");
+            if (Math.abs(numExemplars-maxExemplars)<0.50*maxExemplars) { // close enough
+              Log.info("Converged.");
+              break;
+            } else {
+              hi = mid;
+            }
+          }
+        }
+        _job.update(1, "Aggregation finished. Got " + numExemplars + " examplars");
+        assert(!aggTask._aborted);
 
         _job.update(1, "Aggregating exemplar assignments.");
         new RenumberTask(aggTask._mapping).doAll(assignment);
@@ -185,9 +230,11 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     final double _delta;
     final Key _dataInfoKey;
     final Key _jobKey;
+    final int _maxExemplars;
 
     // OUTPUT
     Exemplar[] _exemplars;
+    volatile boolean _aborted;
 //    long[] _counts;
 
     static class MyPair extends Iced<MyPair> implements Comparable<MyPair> {
@@ -244,14 +291,17 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     GIDMapping _mapping;
 
-    public AggregateTask(Key<DataInfo> dataInfoKey, double radius, Key<Job> jobKey) {
+    public AggregateTask(Key<DataInfo> dataInfoKey, double radius, Key<Job> jobKey, int maxExemplars) {
       _delta = radius*radius;
       _dataInfoKey = dataInfoKey;
       _jobKey = jobKey;
+      _maxExemplars = maxExemplars;
     }
 
     @Override
     public void map(Chunk[] chks) {
+      if (_aborted)
+        return;
       _mapping = new GIDMapping();
       Exemplar[] es = new Exemplar[4];
 
@@ -264,6 +314,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       DataInfo.Row row = di.newDenseRow(); //shared _dataInfo - faster, no writes
       final int nCols = row.nNums;
       for (int r=0; r<chks[0]._len; ++r) {
+        if (_aborted)
+          return;
         long rowIndex = chks[0].start()+r;
         row = di.extractDenseRow(dataChks, r, row);
         double[] data = Arrays.copyOf(row.numVals, nCols);
@@ -278,6 +330,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           int index = 0;
           long gid=-1;
           for(Exemplar e: es) {
+            if (_aborted)
+              return;
             if( null==e ) break;
             double distToExemplar = e.squaredEuclideanDistance(data,distanceToNearestExemplar);
             if( distToExemplar < distanceToNearestExemplar ) {
@@ -298,12 +352,22 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
             /* otherwise, assign a new exemplar */
             Exemplar ex = new Exemplar(data, rowIndex);
             es = Exemplar.addExemplar(es,ex);
+            if (es.length > 2*_maxExemplars) { //es array grows by 2x - have to be conservative here
+              _aborted = true;
+              Log.info("Cutout1 over " + _maxExemplars);
+              return;
+            }
             assignmentChk.set(r, rowIndex); //assign to self
           }
         }
       }
       // populate output primitive arrays
       _exemplars = Exemplar.trim(es);
+      if (_exemplars.length > _maxExemplars) {
+        Log.info("Cutout2 over " + _maxExemplars);
+        _aborted = true;
+        return;
+      }
       assert(_exemplars.length <= chks[0].len());
       long sum=0;
       for (Exemplar e: _exemplars) sum+=e._cnt;
@@ -313,6 +377,14 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     @Override
     public void reduce(AggregateTask mrt) {
+      if (_aborted || _exemplars == null || mrt._exemplars == null || _exemplars.length > _maxExemplars || mrt._exemplars.length > _maxExemplars) {
+        _aborted = true;
+        _mapping = null;
+        _exemplars = null;
+        mrt._exemplars = null;
+      }
+      if (_aborted) return;
+
       for (int i=0; i<mrt._mapping.len; ++i)
         _mapping.set(mrt._mapping.pairSet[i].first, mrt._mapping.pairSet[i].second);
       // reduce mrt into this

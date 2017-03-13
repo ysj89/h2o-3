@@ -31,16 +31,16 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 1.0;
+    parms._max_exemplars = 100;
     long start = System.currentTimeMillis();
-    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0,10));
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==649);
+    Assert.assertTrue(agg._exemplars.length<=100*1.05);
     output.remove();
     agg.remove();
   }
@@ -61,7 +61,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 1.0;
     parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
@@ -70,7 +69,6 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0,10));
     Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
     frame.remove();
     agg.remove();
@@ -92,7 +90,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 1.0;
     parms._transform = DataInfo.TransformType.NORMALIZE;
     parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
     long start = System.currentTimeMillis();
@@ -102,7 +99,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0,10));
     Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==649);
+    Assert.assertTrue(agg._exemplars.length==1000);
     output.remove();
     frame.remove();
     agg.remove();
@@ -125,7 +122,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 1.0;
+    parms._max_exemplars = 278;
     parms._transform = DataInfo.TransformType.NORMALIZE;
     parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
     long start = System.currentTimeMillis();
@@ -135,7 +132,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0,10));
     Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==649);
+    Assert.assertTrue(agg._exemplars.length<=278);
     output.remove();
     frame.remove();
     agg.remove();
@@ -147,7 +144,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 5.0;
+    parms._max_exemplars = 500;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.179
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
@@ -156,7 +153,7 @@ public class AggregatorTest extends TestUtil {
     Log.info("Exemplars: " + output.toString());
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==615);
+    Assert.assertTrue(agg._exemplars.length<=500*1.05);
     agg.remove();
   }
 
@@ -165,7 +162,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 3.0;
+    parms._max_exemplars = 137;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.418
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
@@ -184,13 +181,13 @@ public class AggregatorTest extends TestUtil {
 
       parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;
-      parms._radius_scale = 3.0;
+      parms._max_exemplars = 137;
       start = System.currentTimeMillis();
       AggregatorModel agg2 = new Aggregator(parms).trainModel().get();  // 0.373 0.504 0.357 0.454 0.368 0.355
       System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");      agg2.checkConsistency();
       Log.info("Number of exemplars for " + i + " chunks: " + agg2._exemplars.length);
       rebalanced.delete();
-      Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) == 0); //< agg._exemplars.length*0);
+      Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) == 0);
       output = agg2._output._output_frame.get();
       output.remove();
       agg2.remove();
@@ -204,7 +201,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 5.0;
+    parms._max_exemplars = 117;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();   // 1.489
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
@@ -225,7 +222,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==615);
+    Assert.assertTrue(agg._exemplars.length<=117);
     frame.delete();
     agg.remove();
   }
@@ -242,10 +239,10 @@ public class AggregatorTest extends TestUtil {
     DKV.put(frame);
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 10;
+    parms._max_exemplars = 17;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     Frame output = agg._output._output_frame.get();
-    Assert.assertTrue(output.numRows() < 0.5*frame.numRows());
+    Assert.assertTrue(output.numRows() <= 17);
     boolean same = true;
     for (int i=0;i<frame.numCols();++i) {
       if (frame.vec(i).isCategorical()) {
@@ -265,7 +262,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._radius_scale = 100.0;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
