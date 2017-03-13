@@ -95,9 +95,9 @@ public class TestUtil extends Iced {
   My feeble attempt to save a H2OFrame built in java to csv file
 
    */
-  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean headers, boolean hex_string)
+  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe)
           throws IOException {
-    InputStream frameToStream = h2oframe.toCSV(headers, hex_string);    // read in frame as Inputstream
+    InputStream frameToStream = h2oframe.toCSV(false, false);    // read in frame as Inputstream
     byte[] buffer = new byte[frameToStream.available()];
     frameToStream.read(buffer);
 
@@ -105,8 +105,31 @@ public class TestUtil extends Iced {
     File targetFile = new File(fileNameWithPath);
     OutputStream outStream = new FileOutputStream(targetFile);
     outStream.write(buffer);
+
+    frameToStream.close();
+    outStream.flush();
+    outStream.close();
   }
 
+  public static void writeFrameToCSV2(String fileNameWithPath, Frame h2oframe)
+          throws IOException {
+    InputStream frameToStream = h2oframe.toCSV(false, false);    // read in frame as Inputstream
+    // write Inputstream to a real file
+    File targetFile = new File(fileNameWithPath);
+    OutputStream outStream = new FileOutputStream(targetFile);
+
+    byte[] buffer = new byte[1048576];
+    int bytesRead;
+
+    while((bytesRead=frameToStream.read(buffer)) != -1) {
+      outStream.write(buffer, 0, bytesRead);
+    }
+
+    frameToStream.close();
+    outStream.flush();
+    outStream.close();
+
+  }
 
   @AfterClass
   public static void checkLeakedKeys() {
