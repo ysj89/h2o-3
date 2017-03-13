@@ -88,8 +88,9 @@ public class TestPowerPCA extends TestUtil {
 						Gram.OuterGramTask ogtsk = new Gram.OuterGramTask(null, dinfo).doAll(dinfo._adaptedFrame);
 						Gram gram = ogtsk._gram;
 
-						Frame eigFrame = new water.util.ArrayUtils().frame(gram.getXX());		// store outergram in a frame
-						Scope.track(eigFrame);
+						Frame gramFrame = new water.util.ArrayUtils().frame(gram.getXX());		// store outergram in a frame
+						TestUtil.writeFrameToCSV2("/Users/wendycwong/h2o-3/h2o-py/tests/testdir_algos/pca/outerGram.csv",gramFrame);
+						Scope.track(gramFrame);
 
 						double[] randomInitialV = null; // store random initial eigenvectors, actually refering to V'
 						int eigVecLen = (int) gram.fullN();       // size of one eigenvector
@@ -128,9 +129,10 @@ public class TestPowerPCA extends TestUtil {
 
 						}
 						allVecs[iters] = v;		// add the final v
-						eigFrame.add(new water.util.ArrayUtils().frame(transpose(allVecs)));
+						Frame eigFrame = new water.util.ArrayUtils().frame(transpose(allVecs));
+						Scope.track(eigFrame);
 //						TestUtil.writeFrameToCSV("/Users/wendycwong/h2o-3/h2o-py/tests/testdir_algos/pca/checkPowerLoop.csv",eigFrame);
-						TestUtil.writeFrameToCSV2("/Users/wendycwong/h2o-3/h2o-py/tests/testdir_algos/pca/checkPowerLoop2.csv",eigFrame);
+						TestUtil.writeFrameToCSV2("/Users/wendycwong/h2o-3/h2o-py/tests/testdir_algos/pca/sucessiveVs.csv",eigFrame);
 						Scope.track(eigFrame);
 				} catch (IOException e) {
 						e.printStackTrace();
